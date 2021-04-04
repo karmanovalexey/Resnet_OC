@@ -8,7 +8,8 @@ import math
 import glob
 from time import perf_counter
 
-from resnet_oc.resnet_oc import get_resnet34_base_oc_layer3
+from resnet_oc.resnet_oc import get_resnet34_oc
+from resnet_oc_mod.resnet_oc_mod import get_resnet34_oc_mod
 
 from mapillary import mapillary
 from torch.utils.data import DataLoader
@@ -44,7 +45,7 @@ def val(args, model, part=1., mode='val', epoch=None):
     color_transform = Colorize(NUM_CLASSES)
 
     #Must load weights, optimizer, epoch and best value.
-    file_resume = f'{args.model_path}'
+    file_resume = f'./save/{args.model_path}'
     assert os.path.exists(file_resume), "No model checkpoint found"
     checkpoint = torch.load(file_resume)
     model.load_state_dict(checkpoint['model'])
@@ -92,9 +93,9 @@ def main(args):
     with wandb.init(project=args.project_name, config=config):
         print('Using', args.model)
         if args.model == 'resnet_oc':
-            model = get_resnet34_base_oc_layer3(pretrained_backbone=True)
-        if args.model == 'resnet_oc_lw':
-            model = get_resnet34_base_oc_layer3(pretrained_backbone=True, modified_context=True)
+            model = get_resnet34_oc(pretrained_backbone=True)
+        elif args.model == 'resnet_oc_lw':
+            model = get_resnet34_oc_mod(pretrained_backbone=True)
         else:
             raise NotImplementedError('Unknown model')
         model = torch.nn.DataParallel(model).cuda()
@@ -111,5 +112,5 @@ if __name__ == '__main__':
     parser.add_argument('--height', type=int, default=1080, help='Height of images, nothing to add')
     parser.add_argument('--batch-size', type=int, default=1)
     parser.add_argument('--model-path', required=True, help='Where to load your model from')
-    parser.add_argument('--project-name', default='Evaluation', help='Project name for weights and Biases')
+    parser.add_argument('--project-name', default='OC Results', help='Project name for weights and Biases')
     main(parser.parse_args())

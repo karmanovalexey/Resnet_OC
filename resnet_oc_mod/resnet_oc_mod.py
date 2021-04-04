@@ -5,9 +5,9 @@ import torch.nn.functional as F
 from collections import OrderedDict
 
 from .backbone_utils import IntermediateLayerGetter
-from .base_oc_block import BaseOC_Module
+from .base_oc_block_mod import BaseOC_Module
 
-def get_resnet34_oc(num_classes=66, pretrained_backbone=False):
+def get_resnet34_oc_mod(num_classes=66, pretrained_backbone=False):
 
     replace_stride_with_dilation = [False, False, False]
     inplanes_scale_factor = 4

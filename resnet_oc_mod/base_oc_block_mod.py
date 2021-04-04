@@ -43,47 +43,22 @@ class _SelfAttentionBlock(nn.Module):
         nn.init.constant_(self.W.bias, 0)
 
     def forward(self, x):
-        # if self.modified_context:
-        #     batch_size, h, w = x.size(0), x.size(2), x.size(3)
-        #     if self.scale > 1:
-        #         x = self.pool(x)
-
-        #     value = self.f_value(x)
-        #     value = value.permute(0, 1, 3, 2)
-        #     query = self.f_query(x)
-        #     query = query.permute(0, 1, 3, 2)
-        #     key = self.f_key(x)
-
-        #     sim_map = torch.matmul(query, key)
-        #     sim_map = (h**-.5) * sim_map
-        #     sim_map = F.softmax(sim_map, dim=-1)
-
-        #     context = torch.matmul(sim_map, value)
-        #     context = context.permute(0, 1, 3, 2).contiguous()
-        #     context = self.W(context)
-        #     if self.scale > 1:
-        #         context = F.interpolate(input=context, size=(h, w),
-        #                                 mode='bilinear', align_corners=True)
-            
-        #     return context
-        # else:
         batch_size, h, w = x.size(0), x.size(2), x.size(3)
         if self.scale > 1:
             x = self.pool(x)
 
-        value = self.f_value(x).view(batch_size, self.value_channels, -1)
-        value = value.permute(0, 2, 1)
-        query = self.f_query(x).view(batch_size, self.key_channels, -1)
-        query = query.permute(0, 2, 1)
-        key = self.f_key(x).view(batch_size, self.key_channels, -1)
+        value = self.f_value(x)
+        value = value.permute(0, 1, 3, 2)
+        query = self.f_query(x)
+        query = query.permute(0, 1, 3, 2)
+        key = self.f_key(x)
 
         sim_map = torch.matmul(query, key)
-        sim_map = (self.key_channels**-.5) * sim_map
+        sim_map = (h**-.5) * sim_map
         sim_map = F.softmax(sim_map, dim=-1)
 
         context = torch.matmul(sim_map, value)
-        context = context.permute(0, 2, 1).contiguous()
-        context = context.view(batch_size, self.value_channels, *x.size()[2:])
+        context = context.permute(0, 1, 3, 2).contiguous()
         context = self.W(context)
         if self.scale > 1:
             context = F.interpolate(input=context, size=(h, w),
