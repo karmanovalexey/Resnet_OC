@@ -120,9 +120,9 @@ def main(args):
     with wandb.init(project=args.project_name, config=config):
         print('Using', args.model)
         if args.model == 'resnet_oc':
-            model = get_resnet34_oc(pretrained_backbone=True)
-        if args.model == 'resnet_oc_lw':
-            model = get_resnet34_oc_mod(pretrained_backbone=True)
+            model = get_resnet34_oc()
+        elif args.model == 'resnet_oc_lw':
+            model = get_resnet34_oc_mod()
         else:
             raise NotImplementedError('Unknown model')
         model = torch.nn.DataParallel(model).cuda()
