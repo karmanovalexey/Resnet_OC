@@ -6,7 +6,7 @@ from collections import OrderedDict
 
 from .base_oc_block import BaseOC_Module
 
-from .resnet_backbone import resnet34
+from .resnet_backbone import Resnet34
 
 def get_resnet34_oc(num_classes=66):
 
@@ -17,7 +17,7 @@ def get_resnet34_oc(num_classes=66):
     inplanes = 1024 // inplanes_scale_factor
     outplanes = 512
     
-    backbone = resnet34()
+    backbone = Resnet34()
     model = ResNet_Base_OC(backbone, inplanes, outplanes, num_classes)
     
     return model

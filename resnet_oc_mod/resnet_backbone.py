@@ -233,7 +233,7 @@ def _resnet(
 
 
 
-def resnet34(progress: bool = True, **kwargs: Any) -> ResNet:
+def Resnet34(progress: bool = True, **kwargs: Any) -> ResNet:
     r"""ResNet-34 model from
     `"Deep Residual Learning for Image Recognition" <https://arxiv.org/pdf/1512.03385.pdf>`_.
 

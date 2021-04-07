@@ -11,12 +11,12 @@ from time import perf_counter
 from resnet_oc.resnet_oc import get_resnet34_oc
 from resnet_oc_mod.resnet_oc_mod import get_resnet34_oc_mod
 
-from mapillary import mapillary
+from utils.mapillary import mapillary
 from torch.utils.data import DataLoader
 from argparse import ArgumentParser
 from transform import Colorize
 
-from iouEval import iouEval
+from utils.iouEval import iouEval
 import wandb
 
 NUM_CLASSES = 66
