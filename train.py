@@ -12,13 +12,18 @@ from resnet_oc.resnet_oc import get_resnet34_oc
 from resnet_oc_mod.resnet_oc_mod import get_resnet34_oc_mod
 from val import val
 
-from mapillary import mapillary
+from utils.mapillary import mapillary
 from torch.optim import SGD, Adam, lr_scheduler
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
 from argparse import ArgumentParser
+<<<<<<< HEAD
 from transform import Colorize
 from val import val
+=======
+from utils.transform import Colorize
+from val import val
+>>>>>>> 31a1b8cfda6142a45287183de63af2065dc66661
 
 import wandb
 
@@ -46,7 +51,7 @@ def train(args, model):
     assert os.path.exists(args.data_dir), "Error: datadir (dataset directory) could not be loaded"
 
     dataset_train = mapillary(args.data_dir, 'train', height=args.height, part=1)
-    loader = DataLoader(dataset_train, num_workers=4, batch_size=args.batch_size, shuffle=True)
+    loader = DataLoader(dataset_train, num_workers=2, batch_size=args.batch_size, shuffle=True)
     print('Loaded', len(loader), 'files')
 
     criterion = CrossEntropyLoss2d()
@@ -121,9 +126,9 @@ def main(args):
     with wandb.init(project=args.project_name, config=config):
         print('Using', args.model)
         if args.model == 'resnet_oc':
-            model = get_resnet34_oc(pretrained_backbone=True)
-        if args.model == 'resnet_oc_lw':
-            model = get_resnet34_oc_mod(pretrained_backbone=True)
+            model = get_resnet34_oc()
+        elif args.model == 'resnet_oc_lw':
+            model = get_resnet34_oc_mod()
         else:
             raise NotImplementedError('Unknown model')
         model = torch.nn.DataParallel(model).cuda()

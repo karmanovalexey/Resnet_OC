@@ -4,7 +4,7 @@ import random
 
 from torchvision.transforms import Compose, CenterCrop, Normalize, Resize, Pad
 from torchvision.transforms import ToTensor, ToPILImage
-from transform import Relabel, ToLabel, Colorize
+from .transform import Relabel, ToLabel, Colorize
 
 from PIL import Image, ImageOps
 
