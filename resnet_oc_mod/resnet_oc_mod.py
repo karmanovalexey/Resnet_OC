@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from collections import OrderedDict
 
 from .base_oc_block_mod import BaseOC_Module
-from .resnet_backbone import Resnet34
+from .resnet_backbone_mod import Resnet34
 
 def get_resnet34_oc_mod(num_classes=66):
 

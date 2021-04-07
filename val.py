@@ -81,7 +81,7 @@ def val(args, model, part=1.,):
 
         examples = [np.moveaxis(np.array(color_transform(outputs[0].cpu().max(0)[1].data.unsqueeze(0))),0,2),
                 np.moveaxis(np.array(color_transform(labels[0].cpu().data)),0,2)]
-        wandb.log({args.model):[wandb.Image(i) for i in examples]})
+        wandb.log({args.model:[wandb.Image(i) for i in examples]})
 
     return [np.mean(val_iou), 1./np.mean(time_val), np.mean(val_loss)]
 

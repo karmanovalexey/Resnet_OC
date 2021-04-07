@@ -83,8 +83,8 @@ def train(args, model):
             if step > 101: break
             start_time = time.time()
 
-            images = images.to(torch.device(f'cuda:{args.device}'))
-            labels = labels.to(torch.device(f'cuda:{args.device}'))
+            inputs = images.to(torch.device(f'cuda:{args.device}'))
+            targets = labels.to(torch.device(f'cuda:{args.device}'))
 
             outputs = model(inputs)
             

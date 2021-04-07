@@ -44,7 +44,7 @@ class ResNet_Base_OC(nn.Module):
         
         #print('input: ', x.shape)
         x = self.backbone(x)
-        #print('backbone: ', x.shape)
+        # print('backbone: ', x.shape)
         x = self.context(x)
         # print('context: ', x.shape)
         x = self.cls(x)
