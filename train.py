@@ -80,7 +80,6 @@ def train(args, model):
 
         model.train()
         for step, (images, labels) in enumerate(loader):
-            if step > 101: break
             start_time = time.time()
 
             inputs = images.to(torch.device(f'cuda:{args.device}'))
