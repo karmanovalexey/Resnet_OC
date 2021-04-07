@@ -14,7 +14,7 @@ from resnet_oc_mod.resnet_oc_mod import get_resnet34_oc_mod
 from utils.mapillary import mapillary
 from torch.utils.data import DataLoader
 from argparse import ArgumentParser
-from transform import Colorize
+from utils.transform import Colorize
 
 from utils.iouEval import iouEval
 import wandb

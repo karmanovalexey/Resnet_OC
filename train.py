@@ -17,7 +17,7 @@ from torch.optim import SGD, Adam, lr_scheduler
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
 from argparse import ArgumentParser
-from transform import Colorize
+from utils.transform import Colorize
 
 import wandb
 
@@ -45,7 +45,7 @@ def train(args, model):
     assert os.path.exists(args.data_dir), "Error: datadir (dataset directory) could not be loaded"
 
     dataset_train = mapillary(args.data_dir, 'train', height=args.height, part=1)
-    loader = DataLoader(dataset_train, num_workers=4, batch_size=args.batch_size, shuffle=True)
+    loader = DataLoader(dataset_train, num_workers=2, batch_size=args.batch_size, shuffle=True)
     print('Loaded', len(loader), 'files')
 
     criterion = CrossEntropyLoss2d()
