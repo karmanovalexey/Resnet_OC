@@ -17,13 +17,8 @@ from torch.optim import SGD, Adam, lr_scheduler
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
 from argparse import ArgumentParser
-<<<<<<< HEAD
-from transform import Colorize
-from val import val
-=======
 from utils.transform import Colorize
 from val import val
->>>>>>> 31a1b8cfda6142a45287183de63af2065dc66661
 
 import wandb
 
@@ -48,10 +43,10 @@ class CrossEntropyLoss2d(torch.nn.Module):
 
 
 def train(args, model):
+    #Get training data
     assert os.path.exists(args.data_dir), "Error: datadir (dataset directory) could not be loaded"
-
     dataset_train = mapillary(args.data_dir, 'train', height=args.height, part=1)
-    loader = DataLoader(dataset_train, num_workers=2, batch_size=args.batch_size, shuffle=True)
+    loader = DataLoader(dataset_train, num_workers=4, batch_size=args.batch_size, shuffle=True)
     print('Loaded', len(loader), 'files')
 
     criterion = CrossEntropyLoss2d()
@@ -65,7 +60,7 @@ def train(args, model):
     
     start_epoch = 1
     if args.resume:
-        #Must load weights, optimizer, epoch and best value. 
+        #Must load weights, optimizer, epoch and best value.
         file_resume = savedir + '/model-{}.pth'.format(get_last_state(savedir))
         
         assert os.path.exists(file_resume), "Error: resume option was used but checkpoint was not found in folder"
@@ -85,13 +80,11 @@ def train(args, model):
 
         model.train()
         for step, (images, labels) in enumerate(loader):
+            if step > 101: break
             start_time = time.time()
 
-            images = images.cuda()
-            labels = labels.cuda()
-
-            inputs = Variable(images)
-            targets = Variable(labels)
+            images = images.to(torch.device(f'cuda:{args.device}'))
+            labels = labels.to(torch.device(f'cuda:{args.device}'))
 
             outputs = model(inputs)
             
@@ -103,12 +96,13 @@ def train(args, model):
             epoch_loss.append(loss.data.item())
             time_train.append(time.time() - start_time)
 
-            if step % 200 == 0:
+            if step % 100 == 0:
                 average = sum(epoch_loss) / len(epoch_loss)
                 wandb.log({"epoch":epoch, "loss":loss.data.item()}, step=(epoch-1)*18000 + step)
                 print(f'loss: {average:0.4} (epoch: {epoch}, step: {step})', 
                         "// Avg time/img: %.4f s" % (sum(time_train) / len(time_train) / args.batch_size))
-        val(args, model, part=0.05)
+
+        print('Val', val(args, model, part=0.05))
         if args.epochs_save > 0 and epoch > 0 and epoch % args.epochs_save == 0:
             filename = f'{savedir}/model-{epoch}.pth'
             torch.save({'model':model.state_dict(), 'opt':optimizer.state_dict(), 'epoch':epoch}, filename)
@@ -117,11 +111,14 @@ def train(args, model):
     return
 
 def main(args):
+    #Make sure the saving directory for our model exists
     savedir = args.save_dir
     savedir = f'./save/{savedir}'
     if not os.path.exists(savedir):
         os.makedirs(savedir)
 
+
+    #Init W&b to track results and get model
     config = dict(model=args.model, num_epochs=args.num_epochs, batch_size=args.batch_size, dataset='Mapillary')
     with wandb.init(project=args.project_name, config=config):
         print('Using', args.model)
@@ -131,7 +128,8 @@ def main(args):
             model = get_resnet34_oc_mod()
         else:
             raise NotImplementedError('Unknown model')
-        model = torch.nn.DataParallel(model).cuda()
+        
+        model = model.to(torch.device(f'cuda:{args.device}'))
 
         print("========== TRAINING ===========")
         train(args, model)
@@ -149,5 +147,6 @@ if __name__ == '__main__':
     parser.add_argument('--epochs-save', type=int, default=3, help='You can use this value to save model every X epochs')
     parser.add_argument('--save-dir', required=True, help='Where to save your model')
     parser.add_argument('--resume', action='store_true', help='Resumes from the last save from --savedir directory')
-    parser.add_argument('--project-name', default='Resnet-OC training', help='Project name for weights and Biases')
+    parser.add_argument('--project-name', default='Junk', help='Project name for weights and Biases')
+    parser.add_argument('--device', type=int, default=0, help='Device to train your model on')
     main(parser.parse_args())
