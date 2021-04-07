@@ -1,5 +1,5 @@
 #FROM ubuntu:18.04
-FROM nvcr.io/nvidia/pytorch:21.03-py3
+FROM nvcr.io/nvidia/pytorch:20.09-py3
 # Get dependencies
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
