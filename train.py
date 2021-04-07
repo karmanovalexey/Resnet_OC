@@ -18,6 +18,7 @@ from torch.autograd import Variable
 from torch.utils.data import DataLoader
 from argparse import ArgumentParser
 from transform import Colorize
+from val import val
 
 import wandb
 
@@ -99,12 +100,12 @@ def train(args, model):
 
             if step % 200 == 0:
                 average = sum(epoch_loss) / len(epoch_loss)
-                wandb.log({"epoch":epoch, "loss":average}, step=(epoch-1)*18000 + step)
+                wandb.log({"epoch":epoch, "loss":loss.data.item()}, step=(epoch-1)*18000 + step)
                 print(f'loss: {average:0.4} (epoch: {epoch}, step: {step})', 
                         "// Avg time/img: %.4f s" % (sum(time_train) / len(time_train) / args.batch_size))
-
-        filename = f'{savedir}/model-{epoch}.pth'
+        val(args, model, part=0.05)
         if args.epochs_save > 0 and epoch > 0 and epoch % args.epochs_save == 0:
+            filename = f'{savedir}/model-{epoch}.pth'
             torch.save({'model':model.state_dict(), 'opt':optimizer.state_dict(), 'epoch':epoch}, filename)
             print(f'save: {filename} (epoch: {epoch})')
 

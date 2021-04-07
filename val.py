@@ -29,8 +29,16 @@ class CrossEntropyLoss2d(torch.nn.Module):
     def forward(self, outputs, targets):
         return self.loss(torch.nn.functional.log_softmax(outputs, dim=1), targets)
 
+def load_checkpoint(model_path):
+    #Must load weights, optimizer, epoch and best value.
+    file_resume = f'{model_path}'
+    #file_resume = savedir + '/model-{}.pth'.format(get_last_state(savedir))
+    assert os.path.exists(file_resume), "No model checkpoint found"
+    checkpoint = torch.load(file_resume)
 
-def val(args, model, part=1., mode='val', epoch=None):
+    return checkpoint
+
+def val(args, model, part=1.,):
     dataset_val = mapillary(args.data_dir, 'val', height=args.height, part=part) # Taking only 10% of images
     loader_val = DataLoader(dataset_val, num_workers=4, batch_size=args.batch_size, shuffle=False)
     print('Loaded', len(loader_val), 'files')
@@ -74,17 +82,15 @@ def val(args, model, part=1., mode='val', epoch=None):
             iouVal, iou_classes = iouEvalVal.getIoU()
             val_iou.append(iouVal)
 
-            
-            if step % 10 == 0 and mode=='val': #Log on validation
-                wandb.log({'val_fps':1./np.mean(time_val),
-                'val_IOU':np.mean(val_iou),
-                'val_loss':np.mean(val_loss)}, step=step)
+            wandb.log({'val_fps':1./np.mean(time_val),
+            'val_IOU':np.mean(val_iou),
+            'val_loss':np.mean(val_loss)}, step=step)
 
         examples = [np.moveaxis(np.array(color_transform(outputs[0].cpu().max(0)[1].data.unsqueeze(0))),0,2),
                 np.moveaxis(np.array(color_transform(labels[0].cpu().data)),0,2)]
         wandb.log({args.model+str(checkpoint['epoch']):[wandb.Image(i) for i in examples]})
 
-    return
+    return [np.mean(val_iou), 1./np.mean(time_val), np.mean(val_loss)]
 
 
 def main(args):
@@ -99,6 +105,9 @@ def main(args):
         else:
             raise NotImplementedError('Unknown model')
         model = torch.nn.DataParallel(model).cuda()
+
+        checkpoint = load_checkpoint(args.model_path)
+        model.load_state_dict(checkpoint['model'])
 
         print("========== VALIDATING ===========")
         val(args, model, part=0.5)
