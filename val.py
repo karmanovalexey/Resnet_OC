@@ -40,7 +40,7 @@ def load_checkpoint(model_path):
 
 def val(args, model, part=1.,):
     dataset_val = mapillary(args.data_dir, 'val', height=args.height, part=part) # Taking only 10% of images
-    loader_val = DataLoader(dataset_val, num_workers=4, batch_size=args.batch_size, shuffle=False)
+    loader_val = DataLoader(dataset_val, num_workers=4, batch_size=1, shuffle=False)
     print('Loaded', len(loader_val), 'files')
 
     val_loss = []
