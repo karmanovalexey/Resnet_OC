@@ -73,7 +73,6 @@ def train(args, model):
 
     for epoch in range(start_epoch, args.num_epochs+1):
         print("----- TRAINING - EPOCH", epoch, "-----")
-        scheduler.step(epoch)
 
         epoch_loss = []
         time_train = []
@@ -100,6 +99,8 @@ def train(args, model):
                 wandb.log({"epoch":epoch, "loss":loss.data.item()}, step=(epoch-1)*18000 + step)
                 print(f'loss: {average:0.4} (epoch: {epoch}, step: {step})', 
                         "// Avg time/img: %.4f s" % (sum(time_train) / len(time_train) / args.batch_size))
+
+        scheduler.step()
 
         print('Val', val(args, model, part=0.05))
         if args.epochs_save > 0 and epoch > 0 and epoch % args.epochs_save == 0:
