@@ -96,7 +96,7 @@ def train(args, model):
 
             if step % 100 == 0:
                 average = sum(epoch_loss) / len(epoch_loss)
-                wandb.log({"epoch":epoch, "loss":loss.data.item()}, step=(epoch-1)*18000 + step)
+                wandb.log({"epoch":epoch, "loss":average}, step=(epoch-1)*18000/args.batch_size + step)
                 print(f'loss: {average:0.4} (epoch: {epoch}, step: {step})', 
                         "// Avg time/img: %.4f s" % (sum(time_train) / len(time_train) / args.batch_size))
 
