@@ -81,8 +81,8 @@ def train(args, model):
         for step, (images, labels) in enumerate(loader):
             start_time = time.time()
 
-            inputs = torch.nn.DataParallel(images).cuda()
-            targets = torch.nn.DataParallel(labels).cuda()
+            inputs = images.cuda()
+            targets = labels.cuda()
 
             outputs = model(inputs)
             

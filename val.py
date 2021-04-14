@@ -55,8 +55,8 @@ def val(args, model, part=1.,):
     with torch.no_grad():
         for step, (images, labels) in enumerate(loader_val):
 
-            images = torch.nn.DataParallel(images).cuda()
-            labels = torch.nn.DataParallel(labels).cuda()
+            images = images.cuda()
+            labels = labels.cuda()
 
             torch.cuda.synchronize()
             t1 = perf_counter()
