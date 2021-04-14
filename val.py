@@ -55,8 +55,8 @@ def val(args, model, part=1.,):
     with torch.no_grad():
         for step, (images, labels) in enumerate(loader_val):
 
-            images = images.to(torch.device(f'cuda:{args.device}'))
-            labels = labels.to(torch.device(f'cuda:{args.device}'))
+            images = torch.nn.DataParallel(images, device_ids=[1,2]).cuda()
+            labels = torch.nn.DataParallel(labels, device_ids=[1,2]).cuda()
 
             torch.cuda.synchronize()
             t1 = perf_counter()
@@ -98,7 +98,7 @@ def main(args):
         else:
             raise NotImplementedError('Unknown model')
         
-        model = model.to(torch.device(f'cuda:{args.device}'))
+        model = torch.nn.DataParallel(model, device_ids=[1,2]).cuda()
 
         checkpoint = load_checkpoint(args.model_path)
         model.load_state_dict(checkpoint['model'])
