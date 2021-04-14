@@ -81,8 +81,8 @@ def train(args, model):
         for step, (images, labels) in enumerate(loader):
             start_time = time.time()
 
-            inputs = torch.nn.DataParallel(images, device_ids=[1,2]).cuda()
-            targets = torch.nn.DataParallel(labels, device_ids=[1,2]).cuda()
+            inputs = torch.nn.DataParallel(images).cuda()
+            targets = torch.nn.DataParallel(labels).cuda()
 
             outputs = model(inputs)
             
@@ -129,7 +129,7 @@ def main(args):
         else:
             raise NotImplementedError('Unknown model')
         
-        model = torch.nn.DataParallel(model, device_ids=[1,2]).cuda()
+        model = torch.nn.DataParallel(model).cuda()
 
         print("========== TRAINING ===========")
         train(args, model)
