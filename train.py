@@ -81,8 +81,8 @@ def train(args, model):
         for step, (images, labels) in enumerate(loader):
             start_time = time.time()
 
-            inputs = images.to(torch.device(f'cuda:{args.device}'))
-            targets = labels.to(torch.device(f'cuda:{args.device}'))
+            inputs = images.cuda()
+            targets = labels.cuda()
 
             outputs = model(inputs)
             
@@ -129,7 +129,7 @@ def main(args):
         else:
             raise NotImplementedError('Unknown model')
         
-        model = model.to(torch.device(f'cuda:{args.device}'))
+        model = torch.nn.DataParallel(model, device_ids=args.gpu_ids)
 
         print("========== TRAINING ===========")
         train(args, model)
@@ -148,5 +148,6 @@ if __name__ == '__main__':
     parser.add_argument('--save-dir', required=True, help='Where to save your model')
     parser.add_argument('--resume', action='store_true', help='Resumes from the last save from --savedir directory')
     parser.add_argument('--project-name', default='Junk', help='Project name for weights and Biases')
-    parser.add_argument('--device', type=int, default=0, help='Device to train your model on')
+    parser.add_argument('--gpu-ids', type=str, default='0', help='use which gpu to train, must be a \
+                                                                comma-separated list of integers only (default=0)')
     main(parser.parse_args())
