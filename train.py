@@ -129,7 +129,7 @@ def main(args):
         else:
             raise NotImplementedError('Unknown model')
         
-        model = torch.nn.DataParallel(model, device_ids=args.gpu_ids)
+        model = torch.nn.DataParallel(model, device_ids=[1,2]).cuda()
 
         print("========== TRAINING ===========")
         train(args, model)
