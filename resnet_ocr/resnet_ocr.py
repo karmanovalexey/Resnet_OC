@@ -40,12 +40,12 @@ class ResNet_Base_OC(nn.Module):
     def forward(self, x):
         input_shape = x.shape[-2:]
         
-        #print('input: ', x.shape)
+        print('input: ', x.shape)
         x = self.backbone(x)
-        # print('backbone: ', x.shape)
+        print('backbone: ', x.shape)
         aux, x = self.ocr(x)
-        # print('context: ', x.shape)
+        print('context: ', x.shape)
         x = F.interpolate(x, size=input_shape, mode='bilinear', align_corners=True)
-        # print('output: ', x.shape)
+        print('output: ', x.shape)
         
         return aux, x

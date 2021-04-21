@@ -83,10 +83,14 @@ def train(args, model):
             inputs = images.cuda()
             targets = labels.cuda()
 
-            outputs = model(inputs)
-            
+            out_aux, out = model(inputs)
+
             optimizer.zero_grad()
-            loss = criterion(outputs, targets[:, 0])
+            
+            aux_loss = criterion(out_aux, targets[:, 0])
+            out_loss = criterion(out, targets[:, 0])
+            loss = aux_loss + out_loss
+
             loss.backward()
             optimizer.step()
 

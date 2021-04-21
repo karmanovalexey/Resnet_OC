@@ -5,6 +5,21 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
+INPUT_SHAPE = (1080,1920)
+
+class ModuleHelper:
+
+    @staticmethod
+    def BNReLU(num_features, bn_type=None, **kwargs):
+        return nn.Sequential(
+            nn.BatchNorm2d(num_features),
+            nn.ReLU()
+        )
+
+    @staticmethod
+    def BatchNorm2d(*args, **kwargs):
+        return nn.BatchNorm2d
+
 class SpatialGather_Module(nn.Module):
     """
         Aggregate the context features according to the initial 
@@ -18,10 +33,14 @@ class SpatialGather_Module(nn.Module):
 
     def forward(self, feats, probs):
         batch_size, c, h, w = probs.size(0), probs.size(1), probs.size(2), probs.size(3)
+        print('feats', feats.shape)
+        print('probs', probs.shape)
         probs = probs.view(batch_size, c, -1)
         feats = feats.view(batch_size, feats.size(1), -1)
         feats = feats.permute(0, 2, 1) # batch x hw x c 
         probs = F.softmax(self.scale * probs, dim=2)# batch x k x hw
+        print('feats', feats.shape)
+        print('probs', probs.shape)
         ocr_context = torch.matmul(probs, feats)\
         .permute(0, 2, 1).unsqueeze(3)# batch x k x c
         return ocr_context
@@ -161,8 +180,8 @@ class OCR_Module(nn.Module):
         self.conv3x3_ocr = nn.Sequential(
             nn.Conv2d(in_channels, mid_channels,
                       kernel_size=3, stride=1, padding=1),
-            BatchNorm2d(mid_channels),
-            nn.ReLU(inplace=relu_inplace),
+            nn.BatchNorm2d(mid_channels),
+            nn.ReLU(inplace=True),
         )
         self.ocr_gather_head = SpatialGather_Module(num_classes)
 
@@ -178,14 +197,14 @@ class OCR_Module(nn.Module):
         self.aux_head = nn.Sequential(
             nn.Conv2d(in_channels, in_channels,
                       kernel_size=1, stride=1, padding=0),
-            BatchNorm2d(in_channels),
-            nn.ReLU(inplace=relu_inplace),
+            nn.BatchNorm2d(in_channels),
+            nn.ReLU(inplace=True),
             nn.Conv2d(in_channels, num_classes,
                       kernel_size=1, stride=1, padding=0, bias=True)
         )
         
     def forward(self, feats):
-        out_aux_seg = []
+        #out_aux_seg = []
 
         # ocr
         out_aux = self.aux_head(feats)
@@ -197,8 +216,9 @@ class OCR_Module(nn.Module):
 
         out = self.cls_head(feats)
 
-        out_aux_seg.append(out_aux)
-        out_aux_seg.append(out)
+        #out_aux_seg.append(out_aux)
+        #out_aux_seg.append(out)
+        out_aux = F.interpolate(out_aux, size=INPUT_SHAPE, mode='bilinear', align_corners=True)
 
-        return out_aux_seg
+        return out_aux, out
     
