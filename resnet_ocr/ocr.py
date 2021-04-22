@@ -33,14 +33,10 @@ class SpatialGather_Module(nn.Module):
 
     def forward(self, feats, probs):
         batch_size, c, h, w = probs.size(0), probs.size(1), probs.size(2), probs.size(3)
-        print('feats', feats.shape)
-        print('probs', probs.shape)
         probs = probs.view(batch_size, c, -1)
         feats = feats.view(batch_size, feats.size(1), -1)
         feats = feats.permute(0, 2, 1) # batch x hw x c 
         probs = F.softmax(self.scale * probs, dim=2)# batch x k x hw
-        print('feats', feats.shape)
-        print('probs', probs.shape)
         ocr_context = torch.matmul(probs, feats)\
         .permute(0, 2, 1).unsqueeze(3)# batch x k x c
         return ocr_context
@@ -218,7 +214,7 @@ class OCR_Module(nn.Module):
 
         #out_aux_seg.append(out_aux)
         #out_aux_seg.append(out)
-        out_aux = F.interpolate(out_aux, size=INPUT_SHAPE, mode='bilinear', align_corners=True)
+        #out_aux = F.interpolate(out_aux, size=INPUT_SHAPE, mode='bilinear', align_corners=True)
 
         return out_aux, out
     

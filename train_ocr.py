@@ -46,7 +46,7 @@ def train(args, model):
     assert os.path.exists(args.data_dir), "Error: datadir (dataset directory) could not be loaded"
     dataset_train = mapillary(args.data_dir, 'train', height=args.height, part=1)
     loader = DataLoader(dataset_train, num_workers=4, batch_size=args.batch_size, shuffle=True)
-    print('Loaded', len(loader), 'files')
+    print('Loaded', len(loader), 'batches')
 
     criterion = CrossEntropyLoss2d()
 
@@ -99,7 +99,7 @@ def train(args, model):
 
             if step % 100 == 0:
                 average = sum(epoch_loss) / len(epoch_loss)
-                wandb.log({"epoch":epoch, "loss":average}, step=(epoch-1)*18000/args.batch_size + step)
+                wandb.log({"epoch":epoch, "loss":average}, step=int((epoch-1)*18000/args.batch_size) + step)
                 print(f'loss: {average:0.4} (epoch: {epoch}, step: {step})', 
                         "// Avg time/img: %.4f s" % (sum(time_train) / len(time_train) / args.batch_size))
 
