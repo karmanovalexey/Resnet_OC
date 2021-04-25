@@ -1,0 +1,1 @@
+python3 train.py --data-dir /media/alexey/HDD/Mapillary --model resnet_oc --height 1080 --num-epochs 1 --batch-size 1 --save-dir 
