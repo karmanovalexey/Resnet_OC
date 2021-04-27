@@ -1,28 +1,45 @@
-import os
-import re
-import random
-import time
-import numpy as np
+import wandb
 import torch
-import math
-import glob
-from time import perf_counter
+import os
+import time
+
+from argparse import ArgumentParser
+from tqdm import tqdm
+from torch.utils.data import DataLoader
+from torch.optim import SGD, Adam, lr_scheduler
 
 from resnet_oc.resnet_oc import get_resnet34_oc
-from resnet_oc_mod.resnet_oc_mod import get_resnet34_oc_mod
-from val import val
-
+from resnet_oc_lw.resnet_oc_lw import get_resnet34_oc_lw
+from resnet_ocr.resnet_ocr import get_resnet34_ocr
 from utils.mapillary import mapillary
-from torch.optim import SGD, Adam, lr_scheduler
-from torch.autograd import Variable
-from torch.utils.data import DataLoader
-from argparse import ArgumentParser
-from utils.transform import Colorize
-from val import val
-
-import wandb
+from val import val, val_ocr
 
 NUM_CLASSES = 66
+
+class CrossEntropyLoss2d(torch.nn.Module):
+    def __init__(self, model_name):
+        super().__init__()
+        self.model_name = model_name
+        self.loss = torch.nn.NLLLoss()
+
+    def forward(self, outputs, targets):
+        if self.model_name == 'resnet_ocr':
+            (out_aux, out) = outputs
+            aux_loss = self.loss(torch.nn.functional.log_softmax(out_aux, dim=1), targets)
+            out_loss = self.loss(torch.nn.functional.log_softmax(out, dim=1), targets)
+            return aux_loss + out_loss
+        else:
+            return self.loss(torch.nn.functional.log_softmax(outputs, dim=1), targets)
+
+def get_model(model_name, pretrained=False):
+    if model_name == 'resnet_oc':
+        return get_resnet34_oc(pretrained)
+    elif model_name == 'resnet_oc_lw':
+        return get_resnet34_oc_lw(pretrained)
+    elif model_name == 'resnet_ocr':
+        return get_resnet34_ocr(pretrained)
+    else:
+        raise NotImplementedError('Unknown model')
 
 def get_last_state(path):
     list_of_files = glob.glob(path + "/model-*.pth")
@@ -33,23 +50,17 @@ def get_last_state(path):
         max = num if num > max else max 
     return max
 
-class CrossEntropyLoss2d(torch.nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.loss = torch.nn.NLLLoss()
-
-    def forward(self, outputs, targets):
-        return self.loss(torch.nn.functional.log_softmax(outputs, dim=1), targets)
-
-
-def train(args, model):
+def train(args):
     #Get training data
     assert os.path.exists(args.data_dir), "Error: datadir (dataset directory) could not be loaded"
-    dataset_train = mapillary(args.data_dir, 'train', height=args.height, part=1)
+    dataset_train = mapillary(args.data_dir, 'train', height=args.height, part=0.0025)
     loader = DataLoader(dataset_train, num_workers=4, batch_size=args.batch_size, shuffle=True)
     print('Loaded', len(loader), 'batches')
 
-    criterion = CrossEntropyLoss2d()
+    model = get_model(args.model, args.pretrained)
+    model = torch.nn.DataParallel(model).cuda()
+    
+    criterion = CrossEntropyLoss2d(args.model)
 
     savedir = args.save_dir
     savedir = f'./save/{savedir}'
@@ -70,7 +81,6 @@ def train(args, model):
         optimizer.load_state_dict(checkpoint['opt'])
         print("=> Loaded checkpoint at epoch {})".format(checkpoint['epoch']))
     
-
     for epoch in range(start_epoch, args.num_epochs+1):
         print("----- TRAINING - EPOCH", epoch, "-----")
 
@@ -78,7 +88,7 @@ def train(args, model):
         time_train = []
 
         model.train()
-        for step, (images, labels) in enumerate(loader):
+        for step, (images, labels) in enumerate(tqdm(loader)):
             start_time = time.time()
 
             inputs = images.cuda()
@@ -97,57 +107,56 @@ def train(args, model):
             if step % 100 == 0:
                 average = sum(epoch_loss) / len(epoch_loss)
                 wandb.log({"epoch":epoch, "loss":average}, step=int((epoch-1)*18000/args.batch_size) + step)
-                print(f'loss: {average:0.4} (epoch: {epoch}, step: {step})', 
-                        "// Avg time/img: %.4f s" % (sum(time_train) / len(time_train) / args.batch_size))
-
+        
         scheduler.step()
 
-        print('Val', val(args, model, part=0.05))
+        if args.model == 'resnet_ocr': 
+            print('Val', val_ocr(args, model, part=0.05))
+        else:
+            print('Val', val(args, model, part=0.05))
+        
         if args.epochs_save > 0 and epoch > 0 and epoch % args.epochs_save == 0:
             filename = f'{savedir}/model-{epoch}.pth'
             torch.save({'model':model.state_dict(), 'opt':optimizer.state_dict(), 'epoch':epoch}, filename)
             print(f'save: {filename} (epoch: {epoch})')
-
+    
     return
 
 def main(args):
-    #Make sure the saving directory for our model exists
     savedir = args.save_dir
     savedir = f'./save/{savedir}'
     if not os.path.exists(savedir):
         os.makedirs(savedir)
-
-
-    #Init W&b to track results and get model
-    config = dict(model=args.model, num_epochs=args.num_epochs, batch_size=args.batch_size, dataset='Mapillary')
-    with wandb.init(project=args.project_name, config=config):
-        print('Using', args.model)
-        if args.model == 'resnet_oc':
-            model = get_resnet34_oc()
-        elif args.model == 'resnet_oc_lw':
-            model = get_resnet34_oc_mod()
-        else:
-            raise NotImplementedError('Unknown model')
-        
-        model = torch.nn.DataParallel(model).cuda()
-
+    
+    config = dict(model = args.model,
+                    height = args.height,
+                    epochs = args.num_epochs,
+                    bs = args.batch_size,
+                    pretrained = args.pretrained,
+                    savedir = args.save_dir)
+    
+    log_mode = 'online' if args.wandb else 'disabled'
+    with wandb.init(project=args.project_name, config=config, mode=log_mode):
+        print('Run properties:', config)
         print("========== TRAINING ===========")
-        train(args, model)
+        train(args)
         print("========== TRAINING FINISHED ===========")
 
-if __name__ == '__main__':
+if __name__== '__main__':
     wandb.login()
     parser = ArgumentParser()
     
-    parser.add_argument('--data-dir', help='Mapillary directory')
-    parser.add_argument('--model', choices=['resnet_oc_lw', 'resnet_oc'], help='Tell me what to train')
+    parser.add_argument('--data-dir', required=True, help='Mapillary directory')
+    parser.add_argument('--model', required=True, choices=['resnet_oc_lw', 'resnet_oc', 'resnet_ocr'], help='Tell me what to train')
     parser.add_argument('--height', type=int, default=1080, help='Height of images, nothing to add')
     parser.add_argument('--num-epochs', type=int, default=10, help='If you use resume, give a number considering for how long it trained')
     parser.add_argument('--batch-size', type=int, default=1)
-    parser.add_argument('--epochs-save', type=int, default=3, help='You can use this value to save model every X epochs')
-    parser.add_argument('--save-dir', required=True, help='Where to save your model')
+    parser.add_argument('--save-dir', help='Where to save your model')
+    parser.add_argument('--pretrained', action='store_true', help='Whether to use pretrained backbone')
     parser.add_argument('--resume', action='store_true', help='Resumes from the last save from --savedir directory')
+    parser.add_argument('--wandb', action='store_true', help='Whether to log metrics to wandb')    
     parser.add_argument('--project-name', default='Junk', help='Project name for weights and Biases')
+    parser.add_argument('--epochs-save', type=int, default=3, help='You can use this value to save model every X epochs')
     parser.add_argument('--gpu-ids', type=str, default='0', help='use which gpu to train, must be a \
                                                                 comma-separated list of integers only (default=0)')
     main(parser.parse_args())

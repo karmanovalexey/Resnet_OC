@@ -10,7 +10,7 @@ from .resnet_backbone import Resnet34
 
 NUM_CLASSES = 66
 
-def get_resnet34_ocr(num_classes=NUM_CLASSES):
+def get_resnet34_ocr(pretrained, num_classes=NUM_CLASSES):
 
     replace_stride_with_dilation = [False, False, False]
     inplanes_scale_factor = 4
@@ -19,7 +19,7 @@ def get_resnet34_ocr(num_classes=NUM_CLASSES):
     inplanes = 1024 // inplanes_scale_factor
     outplanes = 512
     
-    backbone = Resnet34()
+    backbone = Resnet34(pretrained)
     model = ResNet_Base_OC(backbone, inplanes, outplanes, num_classes)
     
     return model
@@ -30,9 +30,9 @@ class ResNet_Base_OC(nn.Module):
         super(ResNet_Base_OC, self).__init__()
         self.backbone = backbone
         self.ocr = OCR_Module(in_channels=inplanes, 
-                          out_channels=outplanes, 
-                          key_channels=outplanes // 2, 
-                          mid_channels=outplanes // 2,
+                          out_channels=outplanes // 4, 
+                          key_channels=outplanes // 32, 
+                          mid_channels=outplanes // 64,
                           num_classes=NUM_CLASSES, 
                           dropout=0.05, 
                           sizes=([1]))
@@ -42,8 +42,9 @@ class ResNet_Base_OC(nn.Module):
         
         #print('input: ', x.shape)
         x = self.backbone(x)
-        x = F.interpolate(x, size=input_shape, mode='bilinear', align_corners=True)
+        x = F.interpolate(x, size=(int(input_shape[0]/2), int(input_shape[1]/2)), mode='bilinear', align_corners=True)
         aux, x = self.ocr(x)
+        x = F.interpolate(x, size=input_shape, mode='bilinear', align_corners=True)
         #print('output: ', x.shape)
         
         return aux, x

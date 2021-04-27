@@ -1,4 +1,5 @@
 wandb/
 save/
 docker/
+.*/
 *.pyc

@@ -4,10 +4,10 @@ from torch import nn
 import torch.nn.functional as F
 from collections import OrderedDict
 
-from .base_oc_block_mod import BaseOC_Module
-from .resnet_backbone_mod import Resnet34
+from .base_oc_block_lw import BaseOC_Module
+from .resnet_backbone import Resnet34
 
-def get_resnet34_oc_mod(num_classes=66):
+def get_resnet34_oc_lw(pretrained, num_classes=66):
 
     replace_stride_with_dilation = [False, False, False]
     inplanes_scale_factor = 4
@@ -15,7 +15,7 @@ def get_resnet34_oc_mod(num_classes=66):
     inplanes = 1024 // inplanes_scale_factor
     outplanes = 512
     
-    backbone = Resnet34()
+    backbone = Resnet34(pretrained)
     model = ResNet_Base_OC(backbone, inplanes, outplanes, num_classes)
     
     return model

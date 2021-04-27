@@ -35,10 +35,10 @@ class SpatialGather_Module(nn.Module):
         batch_size, c, h, w = probs.size(0), probs.size(1), probs.size(2), probs.size(3)
         probs = probs.view(batch_size, c, -1)
         feats = feats.view(batch_size, feats.size(1), -1)
-        feats = feats.permute(0, 2, 1) # batch x hw x c 
+        feats = feats.permute(0, 2, 1) # batch x hw x c
         probs = F.softmax(self.scale * probs, dim=2)# batch x k x hw
-        ocr_context = torch.matmul(probs, feats)\
-        .permute(0, 2, 1).unsqueeze(3)# batch x k x c
+        ocr_context = torch.matmul(probs, feats)
+        ocr_context = ocr_context.permute(0, 2, 1).unsqueeze(3)# batch x k x c
         return ocr_context
 
 class SpatialOCR_Module(nn.Module):
@@ -136,7 +136,7 @@ class _ObjectAttentionBlock(nn.Module):
 
         sim_map = torch.matmul(query, key)
         sim_map = (self.key_channels**-.5) * sim_map
-        sim_map = F.softmax(sim_map, dim=-1)   
+        sim_map = F.softmax(sim_map, dim=-1)
 
         # add bg context ...
         context = torch.matmul(sim_map, value)
@@ -183,12 +183,12 @@ class OCR_Module(nn.Module):
 
         self.ocr_distri_head = SpatialOCR_Module(in_channels=mid_channels,
                                                  key_channels=key_channels,
-                                                 out_channels=mid_channels,
+                                                 out_channels=out_channels,
                                                  scale=1,
                                                  dropout=0.05,
                                                  )
         self.cls_head = nn.Conv2d(
-            mid_channels, num_classes, kernel_size=1, stride=1, padding=0, bias=True)
+            out_channels, num_classes, kernel_size=1, stride=1, padding=0, bias=True)
 
         self.aux_head = nn.Sequential(
             nn.Conv2d(in_channels, in_channels,
@@ -214,7 +214,7 @@ class OCR_Module(nn.Module):
 
         #out_aux_seg.append(out_aux)
         #out_aux_seg.append(out)
-        #out_aux = F.interpolate(out_aux, size=INPUT_SHAPE, mode='bilinear', align_corners=True)
+        out_aux = F.interpolate(out_aux, size=INPUT_SHAPE, mode='bilinear', align_corners=True)
 
         return out_aux, out
     
