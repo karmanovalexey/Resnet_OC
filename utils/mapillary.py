@@ -2,7 +2,7 @@ import numpy as np
 import os
 import random
 
-from torchvision.transforms import Compose, CenterCrop, Normalize, Resize, Pad
+from torchvision.transforms import Compose, CenterCrop, Normalize, Resize, Pad, InterpolationMode
 from torchvision.transforms import ToTensor, ToPILImage
 from .transform import Relabel, ToLabel, Colorize
 
@@ -24,14 +24,14 @@ def image_path(root, name):
 
 
 class MyCoTransform(object):
-    def __init__(self, augment=True, height=512):
+    def __init__(self, augment=True, height=600):
         self.augment = augment
         self.height = height
         pass
     def __call__(self, input, target):
         # do something to both images
-        input =  Resize(self.height, Image.BILINEAR)(input)
-        target = Resize(self.height, Image.NEAREST)(target)
+        input =  Resize((self.height,self.height*2), InterpolationMode.BILINEAR)(input)
+        target = Resize((self.height,self.height*2), InterpolationMode.NEAREST)(target)
 
         if(self.augment):
             # Random hflip
@@ -57,7 +57,7 @@ class MyCoTransform(object):
 
 class mapillary(Dataset):
 
-    def __init__(self, root, subset='train', height=1080, part=1.):
+    def __init__(self, root, subset='train', height=600, part=1.):
         self.images_root = os.path.join(root, subset)
         self.labels_root = os.path.join(root, subset)
         

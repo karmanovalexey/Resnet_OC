@@ -200,8 +200,6 @@ class OCR_Module(nn.Module):
         )
         
     def forward(self, feats):
-        #out_aux_seg = []
-
         # ocr
         out_aux = self.aux_head(feats)
         # compute contrast feature
@@ -211,10 +209,6 @@ class OCR_Module(nn.Module):
         feats = self.ocr_distri_head(feats, context)
 
         out = self.cls_head(feats)
-
-        #out_aux_seg.append(out_aux)
-        #out_aux_seg.append(out)
-        out_aux = F.interpolate(out_aux, size=INPUT_SHAPE, mode='bilinear', align_corners=True)
 
         return out_aux, out
     

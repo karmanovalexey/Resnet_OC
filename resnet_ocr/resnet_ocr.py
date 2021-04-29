@@ -42,9 +42,8 @@ class ResNet_Base_OC(nn.Module):
         
         #print('input: ', x.shape)
         x = self.backbone(x)
-        x = F.interpolate(x, size=(int(input_shape[0]/2), int(input_shape[1]/2)), mode='bilinear', align_corners=True)
+        x = F.interpolate(x, size=(int(input_shape[0]), int(input_shape[1])), mode='bilinear', align_corners=True)
         aux, x = self.ocr(x)
-        x = F.interpolate(x, size=input_shape, mode='bilinear', align_corners=True)
         #print('output: ', x.shape)
         
         return aux, x

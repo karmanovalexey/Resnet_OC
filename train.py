@@ -12,24 +12,26 @@ from resnet_oc.resnet_oc import get_resnet34_oc
 from resnet_oc_lw.resnet_oc_lw import get_resnet34_oc_lw
 from resnet_ocr.resnet_ocr import get_resnet34_ocr
 from utils.mapillary import mapillary
+from utils.mapillary_pallete import MAPILLARY_LOSS_WEIGHTS
 from val import val, val_ocr
 
 NUM_CLASSES = 66
 
 class CrossEntropyLoss2d(torch.nn.Module):
-    def __init__(self, model_name):
+    def __init__(self, model_name, weights, ocr_coeff = 0.4):
         super().__init__()
         self.model_name = model_name
-        self.loss = torch.nn.NLLLoss()
+        self.loss = torch.nn.CrossEntropyLoss(weight=loss_weights)
+        self.k = ocr_coeff
 
     def forward(self, outputs, targets):
         if self.model_name == 'resnet_ocr':
             (out_aux, out) = outputs
-            aux_loss = self.loss(torch.nn.functional.log_softmax(out_aux, dim=1), targets)
-            out_loss = self.loss(torch.nn.functional.log_softmax(out, dim=1), targets)
-            return aux_loss + out_loss
+            aux_loss = self.loss(out_aux, targets)
+            out_loss = self.loss(out, targets)
+            return self.k*aux_loss + out_loss
         else:
-            return self.loss(torch.nn.functional.log_softmax(outputs, dim=1), targets)
+            return self.loss(outputs, targets)
 
 def get_model(model_name, pretrained=False):
     if model_name == 'resnet_oc':
@@ -59,8 +61,10 @@ def train(args):
 
     model = get_model(args.model, args.pretrained)
     model = torch.nn.DataParallel(model).cuda()
-    
-    criterion = CrossEntropyLoss2d(args.model)
+
+    loss_weights = torch.FloatTensor(MAPILLARY_LOSS_WEIGHTS)
+    loss_weights = torch.nn.DataParallel(loss_weights).cuda()
+    criterion = CrossEntropyLoss2d(args.model, loss_weights)
 
     savedir = args.save_dir
     savedir = f'./save/{savedir}'
@@ -153,6 +157,7 @@ if __name__== '__main__':
     parser.add_argument('--batch-size', type=int, default=1)
     parser.add_argument('--save-dir', help='Where to save your model')
     parser.add_argument('--pretrained', action='store_true', help='Whether to use pretrained backbone')
+    parser.add_argument('--focal-loss', action='store_true', help='Whether to use focal loss')
     parser.add_argument('--resume', action='store_true', help='Resumes from the last save from --savedir directory')
     parser.add_argument('--wandb', action='store_true', help='Whether to log metrics to wandb')    
     parser.add_argument('--project-name', default='Junk', help='Project name for weights and Biases')
