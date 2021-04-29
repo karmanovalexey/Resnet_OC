@@ -9,6 +9,7 @@ from torch.utils.data import DataLoader
 from torch.optim import SGD, Adam, lr_scheduler
 
 from resnet_oc.resnet_oc import get_resnet34_oc
+from resnet_moc.resnet_moc import get_resnet34_moc
 from resnet_oc_lw.resnet_oc_lw import get_resnet34_oc_lw
 from resnet_ocr.resnet_ocr import get_resnet34_ocr
 from utils.mapillary import mapillary
@@ -21,7 +22,7 @@ class CrossEntropyLoss2d(torch.nn.Module):
     def __init__(self, model_name, weights, ocr_coeff = 0.4):
         super().__init__()
         self.model_name = model_name
-        self.loss = torch.nn.CrossEntropyLoss(weight=loss_weights)
+        self.loss = torch.nn.CrossEntropyLoss(weight=weights)
         self.k = ocr_coeff
 
     def forward(self, outputs, targets):
@@ -40,6 +41,8 @@ def get_model(model_name, pretrained=False):
         return get_resnet34_oc_lw(pretrained)
     elif model_name == 'resnet_ocr':
         return get_resnet34_ocr(pretrained)
+    elif model_name == 'resnet_moc':
+        return get_resnet34_moc(pretrained)
     else:
         raise NotImplementedError('Unknown model')
 
@@ -62,8 +65,7 @@ def train(args):
     model = get_model(args.model, args.pretrained)
     model = torch.nn.DataParallel(model).cuda()
 
-    loss_weights = torch.FloatTensor(MAPILLARY_LOSS_WEIGHTS)
-    loss_weights = torch.nn.DataParallel(loss_weights).cuda()
+    loss_weights = torch.Tensor(MAPILLARY_LOSS_WEIGHTS).cuda()
     criterion = CrossEntropyLoss2d(args.model, loss_weights)
 
     savedir = args.save_dir
@@ -151,8 +153,8 @@ if __name__== '__main__':
     parser = ArgumentParser()
     
     parser.add_argument('--data-dir', required=True, help='Mapillary directory')
-    parser.add_argument('--model', required=True, choices=['resnet_oc_lw', 'resnet_oc', 'resnet_ocr'], help='Tell me what to train')
-    parser.add_argument('--height', type=int, default=1080, help='Height of images, nothing to add')
+    parser.add_argument('--model', required=True, choices=['resnet_oc_lw', 'resnet_oc', 'resnet_ocr', 'resnet_moc'], help='Tell me what to train')
+    parser.add_argument('--height', type=int, default=600, help='Height of images, nothing to add')
     parser.add_argument('--num-epochs', type=int, default=10, help='If you use resume, give a number considering for how long it trained')
     parser.add_argument('--batch-size', type=int, default=1)
     parser.add_argument('--save-dir', help='Where to save your model')

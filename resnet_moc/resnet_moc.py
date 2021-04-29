@@ -8,7 +8,7 @@ from .base_oc_block import BaseOC_Module
 
 from .resnet_backbone import Resnet34
 
-def get_resnet34_oc(pretrained, num_classes=66):
+def get_resnet34_moc(pretrained, num_classes=66):
 
     replace_stride_with_dilation = [False, False, False]
     inplanes_scale_factor = 4

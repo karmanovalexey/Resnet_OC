@@ -1,2 +1,2 @@
 #!/bin/sh
-python3 train.py --data-dir /media/alexey/HDD/Mapillary --model resnet_ocr --height 1080 --num-epochs 12 --batch-size 1 --pretrained --wandb --project-name Resnet-OCR-Training --save-dir resnet_ocr_0
+python3 train.py --data-dir /home/alexey/Datasets/Mapillary --model resnet_moc --height 600 --num-epochs 12 --batch-size 2 --pretrained --wandb --project-name Resnet-MOC-Training --save-dir resnet_moc_0

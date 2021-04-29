@@ -93,21 +93,14 @@ class BaseOC_Module(nn.Module):
     """
     def __init__(self, in_channels, out_channels, key_channels, value_channels, dropout, sizes=([1])):
         super(BaseOC_Module, self).__init__()
-        self.oc = SelfAttentionBlock2D(in_channels, key_channels, value_channels, output_channels,)   
+        self.oc = SelfAttentionBlock2D(in_channels, key_channels, value_channels, out_channels,)   
         self.conv_bn_dropout = nn.Sequential(
             nn.Conv2d(2*in_channels, out_channels, kernel_size=1, padding=0),
             nn.BatchNorm2d(out_channels),
             nn.Dropout2d(dropout)
             )
-
-    def _make_stage(self, in_channels, output_channels, key_channels, value_channels, size):
-        return SelfAttentionBlock2D(in_channels,
-                                    key_channels,
-                                    value_channels,
-                                    output_channels, 
-                                    size,)
         
     def forward(self, feats):
-        priors = self.oc(feats)
+        context = self.oc(feats)
         output = self.conv_bn_dropout(torch.cat([context, feats], 1))
         return output
