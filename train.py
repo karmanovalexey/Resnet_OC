@@ -159,11 +159,8 @@ if __name__== '__main__':
     parser.add_argument('--batch-size', type=int, default=1)
     parser.add_argument('--save-dir', help='Where to save your model')
     parser.add_argument('--pretrained', action='store_true', help='Whether to use pretrained backbone')
-    parser.add_argument('--focal-loss', action='store_true', help='Whether to use focal loss')
     parser.add_argument('--resume', action='store_true', help='Resumes from the last save from --savedir directory')
     parser.add_argument('--wandb', action='store_true', help='Whether to log metrics to wandb')    
     parser.add_argument('--project-name', default='Junk', help='Project name for weights and Biases')
     parser.add_argument('--epochs-save', type=int, default=3, help='You can use this value to save model every X epochs')
-    parser.add_argument('--gpu-ids', type=str, default='0', help='use which gpu to train, must be a \
-                                                                comma-separated list of integers only (default=0)')
     main(parser.parse_args())

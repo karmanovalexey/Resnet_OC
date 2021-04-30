@@ -15,7 +15,7 @@ def get_resnet34_moc(pretrained, num_classes=66):
     
     
     inplanes = 1024 // inplanes_scale_factor
-    outplanes = 64
+    outplanes = 128
     
     backbone = Resnet34(pretrained)
     model = ResNet_Base_OC(backbone, inplanes, outplanes, num_classes)
