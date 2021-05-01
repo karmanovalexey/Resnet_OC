@@ -64,7 +64,7 @@ class _SelfAttentionBlock(nn.Module):
 
         context = torch.matmul(value, sim_map)
         context = context.permute(0, 2, 1).contiguous()
-        context = context.view(batch_size, self.value_channels, *x.size()[2:])
+        context = context.view(batch_size, self.key_channels, *x.size()[2:])
         context = self.W(context)
         if self.scale > 1:
             context = F.interpolate(input=context, size=(h, w),
@@ -95,7 +95,7 @@ class BaseOC_Module(nn.Module):
         super(BaseOC_Module, self).__init__()
         self.oc = SelfAttentionBlock2D(in_channels, key_channels, value_channels, out_channels,)   
         self.conv_bn_dropout = nn.Sequential(
-            nn.Conv2d(2*in_channels, out_channels, kernel_size=1, padding=0),
+            nn.Conv2d(out_channels+in_channels, out_channels, kernel_size=1, padding=0),
             nn.BatchNorm2d(out_channels),
             nn.Dropout2d(dropout)
             )

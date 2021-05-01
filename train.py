@@ -58,7 +58,7 @@ def get_last_state(path):
 def train(args):
     #Get training data
     assert os.path.exists(args.data_dir), "Error: datadir (dataset directory) could not be loaded"
-    dataset_train = mapillary(args.data_dir, 'train', height=args.height, part=0.0025)
+    dataset_train = mapillary(args.data_dir, 'train', height=args.height, part=1.)
     loader = DataLoader(dataset_train, num_workers=4, batch_size=args.batch_size, shuffle=True)
     print('Loaded', len(loader), 'batches')
 
@@ -142,7 +142,7 @@ def main(args):
                     savedir = args.save_dir)
     
     log_mode = 'online' if args.wandb else 'disabled'
-    with wandb.init(project=args.project_name, config=config, mode=log_mode):
+    with wandb.init(project=args.project_name, config=config, mode=log_mode, save_code=True):
         print('Run properties:', config)
         print("========== TRAINING ===========")
         train(args)
