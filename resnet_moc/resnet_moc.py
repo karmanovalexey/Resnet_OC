@@ -1,4 +1,6 @@
 import torchvision
+import torch
+from time import perf_counter
 
 from torch import nn
 import torch.nn.functional as F
@@ -41,15 +43,31 @@ class ResNet_Base_OC(nn.Module):
         
     def forward(self, x):
         input_shape = x.shape[-2:]
-        
+        (h,w) = input_shape
         #print('input: ', x.shape)
+        # torch.cuda.synchronize()
+        # t1 = perf_counter()
         x = self.backbone(x)
+        x = F.interpolate(x, size=(h // 4, w // 4), mode='bilinear', align_corners=True)
+        # torch.cuda.synchronize()
+        # t2 = perf_counter()
+        # print('backbone', t2-t1)
         # print('backbone: ', x.shape)
-        x = F.interpolate(x, size=input_shape, mode='bilinear', align_corners=True)
-        # print('interpol: ', x.shape)
         x = self.context(x)
-        # print('context: ', x.shape)
+        #print('context: ', x.shape)
+
+        # torch.cuda.synchronize()
+        # t3 = perf_counter()
+        # print('context', t3-t2)
+        # print('interpol: ', x.shape)
+        # torch.cuda.synchronize()
+        # t4 = perf_counter()
+        # print('interpolate', t4-t3)
         x = self.cls(x)
+        x = F.interpolate(x, size=input_shape, mode='bilinear', align_corners=True)
+        # torch.cuda.synchronize()
+        # t5 = perf_counter()
+        # print('cls', t5-t4)
         # print('cls: ', x.shape)
         
         return x

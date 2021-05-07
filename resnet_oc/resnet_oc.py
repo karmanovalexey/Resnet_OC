@@ -1,8 +1,10 @@
 import torchvision
+import torch
 
 from torch import nn
 import torch.nn.functional as F
 from collections import OrderedDict
+from time import perf_counter
 
 from .base_oc_block import BaseOC_Module
 
@@ -43,13 +45,30 @@ class ResNet_Base_OC(nn.Module):
         input_shape = x.shape[-2:]
         
         #print('input: ', x.shape)
+        # torch.cuda.synchronize()
+        # t1 = perf_counter()
+
         x = self.backbone(x)
+
+        # torch.cuda.synchronize()
+        # t2 = perf_counter()
+        # print('backbone', t2-t1)
         # print('backbone: ', x.shape)
         x = self.context(x)
+
+        # torch.cuda.synchronize()
+        # t3 = perf_counter()
+        # print('context', t3-t2)
         # print('context: ', x.shape)
         x = self.cls(x)
+        # torch.cuda.synchronize()
+        # t4 = perf_counter()
+        # print('cls', t4-t3)
         # print('cls: ', x.shape)
         x = F.interpolate(x, size=input_shape, mode='bilinear', align_corners=True)
-        # print('output: ', x.shape)
+        # torch.cuda.synchronize()
+        # t5 = perf_counter()
+        # print('interpolate', t5-t4)
+        #print('output: ', x.shape)
         
         return x
