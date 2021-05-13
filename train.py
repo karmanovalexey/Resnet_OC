@@ -2,6 +2,8 @@ import wandb
 import torch
 import os
 import time
+import glob
+import re
 
 from argparse import ArgumentParser
 from tqdm import tqdm
@@ -83,8 +85,9 @@ def train(args):
         assert os.path.exists(file_resume), "Error: resume option was used but checkpoint was not found in folder"
         checkpoint = torch.load(file_resume)
         start_epoch = checkpoint['epoch'] + 1
-        model.load_state_dict(checkpoint['model'])
         optimizer.load_state_dict(checkpoint['opt'])
+        model.load_state_dict(checkpoint['model'])
+        scheduler.load_state_dict(checkpoint['scheduler'])
         print("=> Loaded checkpoint at epoch {})".format(checkpoint['epoch']))
     
     for epoch in range(start_epoch, args.num_epochs+1):
@@ -112,7 +115,7 @@ def train(args):
 
             if step % 100 == 0:
                 average = sum(epoch_loss) / len(epoch_loss)
-                wandb.log({"epoch":epoch, "loss":average}, step=int((epoch-1)*18000/args.batch_size) + step)
+                wandb.log({"epoch":epoch, "loss":average}, step=(epoch-1)*18000 + step*args.batch_size)
         
         scheduler.step()
 
@@ -123,7 +126,7 @@ def train(args):
         
         if args.epochs_save > 0 and epoch > 0 and epoch % args.epochs_save == 0:
             filename = f'{savedir}/model-{epoch}.pth'
-            torch.save({'model':model.state_dict(), 'opt':optimizer.state_dict(), 'epoch':epoch}, filename)
+            torch.save({'model':model.state_dict(), 'opt':optimizer.state_dict(),'scheduler':scheduler.state_dict(), 'epoch':epoch}, filename)
             print(f'save: {filename} (epoch: {epoch})')
     
     return
