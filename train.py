@@ -87,7 +87,7 @@ def train(args):
         start_epoch = checkpoint['epoch'] + 1
         optimizer.load_state_dict(checkpoint['opt'])
         model.load_state_dict(checkpoint['model'])
-        scheduler.load_state_dict(checkpoint['scheduler'])
+        #scheduler.load_state_dict(checkpoint['scheduler'])
         print("=> Loaded checkpoint at epoch {})".format(checkpoint['epoch']))
     
     for epoch in range(start_epoch, args.num_epochs+1):
