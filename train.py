@@ -8,23 +8,63 @@ import re
 from argparse import ArgumentParser
 from tqdm import tqdm
 from torch.utils.data import DataLoader
-from torch.optim import SGD, Adam, lr_scheduler
+from torch.optim import Adam
 
 from resnet_oc.resnet_oc import get_resnet34_oc
 from resnet_moc.resnet_moc import get_resnet34_moc
 from resnet_oc_lw.resnet_oc_lw import get_resnet34_oc_lw
 from resnet_ocr.resnet_ocr import get_resnet34_ocr
+from val import val, val_ocr
 from utils.mapillary import mapillary
 from utils.mapillary_pallete import MAPILLARY_LOSS_WEIGHTS
-from val import val, val_ocr
 
 NUM_CLASSES = 66
 
-class CrossEntropyLoss2d(torch.nn.Module):
-    def __init__(self, model_name, weights, ocr_coeff = 0.4):
+class FocalLoss(torch.nn.Module):
+    """
+    based on https://github.com/clcarwin/focal_loss_pytorch/blob/master/focalloss.py
+    """
+    def __init__(self, gamma=2, alpha=None, size_average=True):
+        super(FocalLoss, self).__init__()
+        self.gamma = gamma
+        self.alpha = alpha
+        if isinstance(alpha, (float, int)): self.alpha = torch.Tensor([alpha, 1 - alpha])
+        if isinstance(alpha, list): self.alpha = torch.Tensor(alpha)
+        self.size_average = size_average
+
+    def forward(self, input, target):
+        if input.dim() > 2:
+            input = input.view(input.size(0), input.size(1), -1)  # N,C,H,W => N,C,H*W
+            input = input.transpose(1, 2)  # N,C,H*W => N,H*W,C
+            input = input.contiguous().view(-1, input.size(2))  # N,H*W,C => N*H*W,C
+        target = target.view(-1, 1)
+
+        logpt = torch.nn.functional.log_softmax(input,-1)
+        logpt = logpt.gather(1, target)
+        logpt = logpt.view(-1)
+        pt = logpt.data.exp()
+
+        if self.alpha is not None:
+            if self.alpha.type() != input.data.type():
+                self.alpha = self.alpha.type_as(input.data)
+            at = self.alpha.gather(0, target.data.view(-1))
+            logpt = logpt * at
+
+        loss = -1 * (1 - pt) ** self.gamma * logpt
+        if self.size_average:
+            return loss.mean()
+        else:
+            return loss.sum()
+
+class Loss(torch.nn.Module):
+    def __init__(self, model_name, loss, ocr_coeff = 0.4):
         super().__init__()
         self.model_name = model_name
-        self.loss = torch.nn.CrossEntropyLoss(weight=weights)
+        if loss=='BCE':
+            loss_weights = torch.Tensor(MAPILLARY_LOSS_WEIGHTS).cuda()
+            self.loss = torch.nn.CrossEntropyLoss(weight=loss_weights) 
+        elif loss=='Focal':
+            self.loss = FocalLoss()
         self.k = ocr_coeff
 
     def forward(self, outputs, targets):
@@ -67,15 +107,15 @@ def train(args):
     model = get_model(args.model, args.pretrained)
     model = torch.nn.DataParallel(model).cuda()
 
-    loss_weights = torch.Tensor(MAPILLARY_LOSS_WEIGHTS).cuda()
-    criterion = CrossEntropyLoss2d(args.model, loss_weights)
+    criterion = Loss(args.model, args.loss)
 
     savedir = args.save_dir
     savedir = f'./save/{savedir}'
 
     optimizer = Adam(model.parameters(), 5e-4, (0.9, 0.999),  eps=1e-08, weight_decay=1e-4)
-    lambda1 = lambda epoch: pow((1-((epoch-1)/args.num_epochs)),0.9)
-    scheduler = lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda1)
+    scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer,
+                                                     lambda x: (1 - x / (len(loader) * args.num_epochs)) ** 0.9)
+
     
     start_epoch = 1
     if args.resume:
@@ -87,7 +127,7 @@ def train(args):
         start_epoch = checkpoint['epoch'] + 1
         optimizer.load_state_dict(checkpoint['opt'])
         model.load_state_dict(checkpoint['model'])
-        #scheduler.load_state_dict(checkpoint['scheduler'])
+        scheduler.load_state_dict(checkpoint['scheduler'])
         print("=> Loaded checkpoint at epoch {})".format(checkpoint['epoch']))
     
     for epoch in range(start_epoch, args.num_epochs+1):
@@ -157,6 +197,7 @@ if __name__== '__main__':
     
     parser.add_argument('--data-dir', required=True, help='Mapillary directory')
     parser.add_argument('--model', required=True, choices=['resnet_oc_lw', 'resnet_oc', 'resnet_ocr', 'resnet_moc'], help='Tell me what to train')
+    parser.add_argument('--loss', default='BCE', help='Loss name, either BCE or Focal')
     parser.add_argument('--height', type=int, default=600, help='Height of images, nothing to add')
     parser.add_argument('--num-epochs', type=int, default=10, help='If you use resume, give a number considering for how long it trained')
     parser.add_argument('--batch-size', type=int, default=1)

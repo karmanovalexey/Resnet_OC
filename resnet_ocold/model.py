@@ -1,28 +1,11 @@
 import torchvision
-import torch
-from time import perf_counter
 
 from torch import nn
 import torch.nn.functional as F
 from collections import OrderedDict
 
 from .base_oc_block import BaseOC_Module
-
-from .resnet_backbone import Resnet34
-
-def get_resnet34_moc(pretrained, num_classes=66):
-
-    replace_stride_with_dilation = [False, False, False]
-    inplanes_scale_factor = 4
-    
-    
-    inplanes = 1024 // inplanes_scale_factor
-    outplanes = 128
-    
-    backbone = Resnet34(pretrained)
-    model = ResNet_Base_OC(backbone, inplanes, outplanes, num_classes)
-    
-    return model
+from .backbone_utils import IntermediateLayerGetter
 
 
 class ResNet_Base_OC(nn.Module):
@@ -43,11 +26,37 @@ class ResNet_Base_OC(nn.Module):
         
     def forward(self, x):
         input_shape = x.shape[-2:]
-        (h,w) = input_shape
-        x = self.backbone(x)
-        x = F.interpolate(x, size=(h//4, w//4), mode='bilinear', align_corners=True)
+        
+        # print('input: ', x.shape)
+        x = self.backbone(x)['out']
+        # print('backbone: ', x.shape)
         x = self.context(x)
+        # print('context: ', x.shape)
         x = self.cls(x)
+        # print('cls: ', x.shape)
         x = F.interpolate(x, size=input_shape, mode='bilinear', align_corners=True)
+        # print('output: ', x.shape)
+        
+        result = OrderedDict()
+        result['out'] = x
         
         return x
+
+
+
+def get_resnet34_base_oc_layer3(num_classes=66, pretrained_backbone=False):
+    backbone_name = 'resnet34'
+    replace_stride_with_dilation = [False, False, False]
+    inplanes_scale_factor = 4
+    
+    backbone = torchvision.models.resnet.__dict__[backbone_name](pretrained=pretrained_backbone,
+                                                                 replace_stride_with_dilation=replace_stride_with_dilation)
+    
+    return_layers = {'layer3': 'out'}
+    inplanes = 1024 // inplanes_scale_factor
+    outplanes = 512
+    
+    backbone = IntermediateLayerGetter(backbone, return_layers=return_layers)
+    model = ResNet_Base_OC(backbone, inplanes, outplanes, num_classes)
+    
+    return model

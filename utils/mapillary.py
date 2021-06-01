@@ -30,8 +30,12 @@ class MyCoTransform(object):
         pass
     def __call__(self, input, target):
         # do something to both images
-        input =  Resize((self.height,self.height*2), InterpolationMode.BILINEAR)(input)
-        target = Resize((self.height,self.height*2), InterpolationMode.NEAREST)(target)
+        if self.height == 1080:
+            input =  Resize((1080,1920), InterpolationMode.BILINEAR)(input)
+            target = Resize((1080,1920), InterpolationMode.NEAREST)(target)
+        else:
+            input =  Resize((self.height,self.height*2), InterpolationMode.BILINEAR)(input)
+            target = Resize((self.height,self.height*2), InterpolationMode.NEAREST)(target)
 
         if(self.augment):
             # Random hflip
@@ -50,6 +54,8 @@ class MyCoTransform(object):
             target = target.crop((0, 0, target.size[0]-transX, target.size[1]-transY))   
 
         input = ToTensor()(input)
+        input = Normalize(mean=[0.485, 0.456, 0.406],
+                                 std=[0.229, 0.224, 0.225])(input)
         target = ToLabel()(target)
         target = Relabel(255, 65)(target)
 
@@ -91,7 +97,6 @@ class mapillary(Dataset):
 
         image, label = self.co_transform(input=image, target=label)
 
-        # torch.from_numpy(np.array(image)).long().unsqueeze(0)
         return image, label
 
     def __len__(self):

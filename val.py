@@ -13,10 +13,12 @@ from torchvision.transforms import Compose, CenterCrop, Normalize, Resize, Pad, 
 from resnet_oc.resnet_oc import get_resnet34_oc
 from resnet_oc_lw.resnet_oc_lw import get_resnet34_oc_lw
 from resnet_ocr.resnet_ocr import get_resnet34_ocr
+from resnet_ocold.model import get_resnet34_base_oc_layer3
 
 from utils.mapillary import mapillary
 from utils.transform import Relabel, ToLabel, Colorize
 from utils.iouEval import iouEval
+from utils.mapillary_pallete import MAPILLARY_CLASSNAMES as classnames
 
 NUM_CLASSES = 66
 
@@ -27,6 +29,8 @@ def get_model(model_name, pretrained=False):
         return get_resnet34_oc_lw(pretrained)
     elif model_name == 'resnet_ocr':
         return get_resnet34_ocr(pretrained)
+    elif model_name == 'resnet_ocold':
+        return get_resnet34_base_oc_layer3(66, pretrained)
     else:
         raise NotImplementedError('Unknown model')
 
@@ -47,16 +51,18 @@ def load_checkpoint(model_path):
 
     return checkpoint
 
-def get_example(height):
-    with open('/workspace/Mapillary/val/1920_1080/images/_4SjTmQ-zn3XSv4D1-Tg4w.jpg', 'rb') as f:
+def get_example(datadir, height):
+    with open(datadir + '/val/1920_1080/images/_4SjTmQ-zn3XSv4D1-Tg4w.jpg', 'rb') as f:
         image = Image.open(f).convert('RGB')
-    with open('/workspace/Mapillary/val/1920_1080/labels/_4SjTmQ-zn3XSv4D1-Tg4w.png', 'rb') as f:
+    with open(datadir + '/val/1920_1080/labels/_4SjTmQ-zn3XSv4D1-Tg4w.png', 'rb') as f:
         label = Image.open(f).convert('P')
 
     input =  Resize((height,height*2), InterpolationMode.BILINEAR)(image)
     target = Resize((height,height*2), InterpolationMode.NEAREST)(label)
 
     input = ToTensor()(input)
+    input = Normalize(mean=[0.485, 0.456, 0.406],
+                                std=[0.229, 0.224, 0.225])(input)
     target = ToLabel()(target)
     target = Relabel(255, 65)(target)
 
@@ -69,7 +75,6 @@ def val(args, model, part=1.,):
 
     val_loss = []
     time_val = []
-    val_iou = []
 
     criterion = CrossEntropyLoss2d()
     model.eval()
@@ -96,24 +101,33 @@ def val(args, model, part=1.,):
             time_val.append((t2 - t1)/images.shape[0]) #time
 
             iouEvalVal.addBatch(outputs.max(1)[1].unsqueeze(1).data, labels.data) #IOU
-            iouVal, iou_classes = iouEvalVal.getIoU()
-            val_iou.append(iouVal)
         
-        img_ex, lab_ex = get_example(args.height)
+        iouVal, iou_classes = iouEvalVal.getIoU()
+
+        data = [[label, val] for (label, val) in zip(classnames[:-1], iou_classes.tolist())]
+        table = wandb.Table(data=data, columns = ["label", "value"])
+        wandb.log({"Predictions" : wandb.plot.bar(table, "label", "value", title="Predictions")})
+
+
+        main_classes = np.mean([iou_classes[2],iou_classes[3],iou_classes[11],iou_classes[13],iou_classes[15],iou_classes[17],
+                            iou_classes[19],iou_classes[23],iou_classes[24],iou_classes[29],iou_classes[30],iou_classes[31],
+                            iou_classes[48],iou_classes[50],iou_classes[54],iou_classes[55]])
+
+        wandb.log({'val_fps':1./np.mean(time_val),
+        'val_IOU':iouVal,
+        'val_loss':np.mean(val_loss),
+        'main_classes': main_classes})
+
+        img_ex, lab_ex = get_example(args.data_dir, args.height)
         img_ex, lab_ex = img_ex.cuda(), lab_ex.cuda()
         outputs = model(img_ex.unsqueeze(0))
 
-        wandb.log({'val_fps':1./np.mean(time_val),
-        'val_IOU':np.mean(val_iou),
-        'val_loss':np.mean(val_loss)})
-
         examples = [np.moveaxis(np.array(color_transform(outputs[0].cpu().max(0)[1].data.unsqueeze(0))),0,2),
-                np.moveaxis(np.array(color_transform(lab_ex.cpu().data)),0,2),
-                np.moveaxis(np.array(img_ex.cpu().data),0,2)]
+                np.moveaxis(np.array(color_transform(lab_ex.cpu().data)),0,2),]
         wandb.log({args.model:[wandb.Image(i) for i in examples]})
 
 
-    return [np.mean(val_iou), 1./np.mean(time_val), np.mean(val_loss)]
+    return [iouVal.data, 1./np.mean(time_val), np.mean(val_loss)]
 
 def val_ocr(args, model, part=1.,):
     dataset_val = mapillary(args.data_dir, 'val', height=args.height, part=part) # Taking only 10% of images
@@ -124,7 +138,6 @@ def val_ocr(args, model, part=1.,):
     aux_loss_epoch = []
     out_loss_epoch = []
     time_val = []
-    val_iou = []
 
     criterion = CrossEntropyLoss2d()
     model.eval()
@@ -155,55 +168,67 @@ def val_ocr(args, model, part=1.,):
             time_val.append((t2 - t1)/images.shape[0]) #time
 
             iouEvalVal.addBatch(out.max(1)[1].unsqueeze(1).data, labels.data) #IOU
-            iouVal, iou_classes = iouEvalVal.getIoU()
-            val_iou.append(iouVal)
 
-        
-        img_ex, lab_ex = get_example(args.height)
-        img_ex, lab_ex = img_ex.cuda(), lab_ex.cuda()
-        outputs_aux, outputs = model(img_ex.unsqueeze(0))
+        val_iou, iou_classes = iouEvalVal.getIoU()
+
+        main_classes = np.mean([iou_classes[2],iou_classes[3],iou_classes[11],iou_classes[13],iou_classes[15],iou_classes[17],
+                            iou_classes[19],iou_classes[23],iou_classes[24],iou_classes[29],iou_classes[30],iou_classes[31],
+                            iou_classes[48],iou_classes[50],iou_classes[54],iou_classes[55]])
+
+        data = [[label, val] for (label, val) in zip(classnames[:-1], iou_classes.tolist())]
+        table = wandb.Table(data=data, columns = ["label", "value"])
+        wandb.log({"Predictions" : wandb.plot.bar(table, "label", "value", title="Predictions")})
 
         wandb.log({'val_fps':1./np.mean(time_val),
-        'val_IOU':np.mean(val_iou),
+        'val_IOU':val_iou,
         'val_loss':np.mean(val_loss),
         'aux_loss':np.mean(aux_loss_epoch),
-        'out_loss':np.mean(out_loss_epoch)})
-
+        'out_loss':np.mean(out_loss_epoch),
+        'main_classes': main_classes})
+        
+        img_ex, lab_ex = get_example(args.data_dir, args.height)
+        img_ex, lab_ex = img_ex.cuda(), lab_ex.cuda()
+        outputs_aux, outputs = model(img_ex.unsqueeze(0))
+        
         examples = [np.moveaxis(np.array(color_transform(outputs[0].cpu().max(0)[1].data.unsqueeze(0))),0,2),
-                np.moveaxis(np.array(color_transform(labels.cpu().data)),0,2),
-                np.moveaxis(np.array(color_transform(outputs_aux.cpu().max(0)[1].data.unsqueeze(0))),0,2)]
+                np.moveaxis(np.array(color_transform(lab_ex.cpu().data)),0,2),
+                np.moveaxis(np.array(color_transform(outputs_aux[0].cpu().max(0)[1].data.unsqueeze(0))),0,2)]
+
         wandb.log({args.model:[wandb.Image(i) for i in examples]})
 
-    return [np.mean(val_iou), 1./np.mean(time_val), np.mean(val_loss)]
+    return [val_iou, 1./np.mean(time_val), np.mean(val_loss)]
 
 def main(args):
     config = dict(model = args.model,
                     height = args.height,
                     bs = args.batch_size,
                     mode = 'Validation')
-    
-    with wandb.init(project=args.project_name, config=config):
+
+    log_mode = 'online' if args.wandb else 'disabled'
+    with wandb.init(project=args.project_name, config=config, mode=log_mode):
         print('Run properties:', config)
         model = get_model(args.model, False)
-        model = torch.nn.DataParallel(model).cuda()
 
+        if not args.model=='resnet_ocold': model = torch.nn.DataParallel(model).cuda()
         checkpoint = load_checkpoint(args.model_path)
-        model.load_state_dict(checkpoint['model'])
+        model.load_state_dict(checkpoint['model'])  
+        model = torch.nn.DataParallel(model).cuda()
 
         print("========== VALIDATING ===========")
         if args.model == 'resnet_ocr':
-            val_ocr(args, model, part=0.5)
+            print(val_ocr(args, model, part=0.5))
         else:
-            val(args, model, part=0.5)
+            print(val(args, model, part=0.5))
         print("========== VALIDATING FINISHED ===========")
 
 if __name__ == '__main__':
     wandb.login()
     parser = ArgumentParser()
     parser.add_argument('--data-dir', help='Mapillary directory')
-    parser.add_argument('--model', choices=['resnet_oc_lw', 'resnet_oc', 'resnet_ocr'], help='Tell me what to train')
+    parser.add_argument('--model', choices=['resnet_oc_lw', 'resnet_oc', 'resnet_ocr', 'resnet_ocold'], help='Tell me what to train')
     parser.add_argument('--height', type=int, default=1080, help='Height of images, nothing to add')
     parser.add_argument('--batch-size', type=int, default=1)
     parser.add_argument('--model-path', required=True, help='Where to load your model from')
+    parser.add_argument('--wandb', action='store_true', help='Whether to log metrics to wandb')    
     parser.add_argument('--project-name', default='OC Results', help='Project name for weights and Biases')
     main(parser.parse_args())
