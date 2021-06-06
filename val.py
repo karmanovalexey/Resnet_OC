@@ -10,14 +10,16 @@ from torch.utils.data import DataLoader
 from argparse import ArgumentParser
 from torchvision.transforms import Compose, CenterCrop, Normalize, Resize, Pad, InterpolationMode, ToTensor, ToPILImage
 
-from resnet_oc.resnet_oc import get_resnet34_oc
-from resnet_oc_lw.resnet_oc_lw import get_resnet34_oc_lw
-from resnet_ocr.resnet_ocr import get_resnet34_ocr
-from resnet_ocold.model import get_resnet34_base_oc_layer3
+from models.resnet_oc.resnet_oc import get_resnet34_oc
+from models.resnet_moc.resnet_moc import get_resnet34_moc
+from models.resnet_oc_lw.resnet_oc_lw import get_resnet34_oc_lw
+from models.resnet_ocr.resnet_ocr import get_resnet34_ocr
+from models.resnet_ocold.model import get_resnet34_base_oc_layer3
 
 from utils.mapillary import mapillary
 from utils.transform import Relabel, ToLabel, Colorize
 from utils.iouEval import iouEval
+from utils.loss import Loss
 from utils.mapillary_pallete import MAPILLARY_CLASSNAMES as classnames
 
 NUM_CLASSES = 66
@@ -29,18 +31,12 @@ def get_model(model_name, pretrained=False):
         return get_resnet34_oc_lw(pretrained)
     elif model_name == 'resnet_ocr':
         return get_resnet34_ocr(pretrained)
+    elif model_name == 'resnet_moc':
+        return get_resnet34_moc(pretrained)
     elif model_name == 'resnet_ocold':
         return get_resnet34_base_oc_layer3(66, pretrained)
     else:
         raise NotImplementedError('Unknown model')
-
-class CrossEntropyLoss2d(torch.nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.loss = torch.nn.NLLLoss()
-
-    def forward(self, outputs, targets):
-        return self.loss(torch.nn.functional.log_softmax(outputs, dim=1), targets)
 
 def load_checkpoint(model_path):
     #Must load weights, optimizer, epoch and best value.
@@ -76,7 +72,7 @@ def val(args, model, part=1.,):
     val_loss = []
     time_val = []
 
-    criterion = CrossEntropyLoss2d()
+    criterion = Loss(args)
     model.eval()
     iouEvalVal = iouEval(NUM_CLASSES)
     color_transform = Colorize(NUM_CLASSES)
@@ -84,8 +80,8 @@ def val(args, model, part=1.,):
     with torch.no_grad():
         for step, (images, labels) in enumerate(tqdm(loader_val)):
 
-            images = images.cuda()
-            labels = labels.cuda()
+            images = images.to(device=args.device)
+            labels = labels.to(device=args.device)
 
             torch.cuda.synchronize()
             t1 = perf_counter()
@@ -119,7 +115,7 @@ def val(args, model, part=1.,):
         'main_classes': main_classes})
 
         img_ex, lab_ex = get_example(args.data_dir, args.height)
-        img_ex, lab_ex = img_ex.cuda(), lab_ex.cuda()
+        img_ex, lab_ex = img_ex.to(device=args.device), lab_ex.to(device=args.device)
         outputs = model(img_ex.unsqueeze(0))
 
         examples = [np.moveaxis(np.array(color_transform(outputs[0].cpu().max(0)[1].data.unsqueeze(0))),0,2),
@@ -135,11 +131,9 @@ def val_ocr(args, model, part=1.,):
     print('Loaded', len(loader_val), 'files')
 
     val_loss = []
-    aux_loss_epoch = []
-    out_loss_epoch = []
     time_val = []
 
-    criterion = CrossEntropyLoss2d()
+    criterion = Loss(args)
     model.eval()
     iouEvalVal = iouEval(NUM_CLASSES)
     color_transform = Colorize(NUM_CLASSES)
@@ -147,24 +141,21 @@ def val_ocr(args, model, part=1.,):
     with torch.no_grad():
         for step, (images, labels) in enumerate(tqdm(loader_val)):
 
-            images = images.cuda()
-            labels = labels.cuda()
+            images = images.to(device=args.device)
+            labels = labels.to(device=args.device)
 
             torch.cuda.synchronize()
             t1 = perf_counter()
 
-            out_aux, out = model(images)
+            outputs = model(images)
+            out_aux, out = outputs
 
             torch.cuda.synchronize()
             t2 = perf_counter()
             
-            aux_loss = criterion(out_aux, labels[:, 0])
-            out_loss = criterion(out, labels[:, 0])
-            loss = aux_loss + out_loss
+            loss = criterion(outputs, labels[:, 0])
 
             val_loss.append(loss.data.item())
-            aux_loss_epoch.append(aux_loss.data.item())
-            out_loss_epoch.append(out_loss.data.item())
             time_val.append((t2 - t1)/images.shape[0]) #time
 
             iouEvalVal.addBatch(out.max(1)[1].unsqueeze(1).data, labels.data) #IOU
@@ -182,12 +173,10 @@ def val_ocr(args, model, part=1.,):
         wandb.log({'val_fps':1./np.mean(time_val),
         'val_IOU':val_iou,
         'val_loss':np.mean(val_loss),
-        'aux_loss':np.mean(aux_loss_epoch),
-        'out_loss':np.mean(out_loss_epoch),
         'main_classes': main_classes})
         
         img_ex, lab_ex = get_example(args.data_dir, args.height)
-        img_ex, lab_ex = img_ex.cuda(), lab_ex.cuda()
+        img_ex, lab_ex = img_ex.to(device=args.device), lab_ex.to(device=args.device)
         outputs_aux, outputs = model(img_ex.unsqueeze(0))
         
         examples = [np.moveaxis(np.array(color_transform(outputs[0].cpu().max(0)[1].data.unsqueeze(0))),0,2),
@@ -203,16 +192,20 @@ def main(args):
                     height = args.height,
                     bs = args.batch_size,
                     mode = 'Validation')
-
+    
+    args.device = None
+    if not args.disable_cuda and torch.cuda.is_available():
+        args.device = torch.device('cuda')
+    else:
+        args.device = torch.device('cpu')
+    
     log_mode = 'online' if args.wandb else 'disabled'
     with wandb.init(project=args.project_name, config=config, mode=log_mode):
         print('Run properties:', config)
-        model = get_model(args.model, False)
+        model = get_model(args.model, False).to(device=args.device)
 
-        if not args.model=='resnet_ocold': model = torch.nn.DataParallel(model).cuda()
         checkpoint = load_checkpoint(args.model_path)
-        model.load_state_dict(checkpoint['model'])  
-        model = torch.nn.DataParallel(model).cuda()
+        model.load_state_dict(checkpoint['model'])
 
         print("========== VALIDATING ===========")
         if args.model == 'resnet_ocr':
@@ -225,10 +218,12 @@ if __name__ == '__main__':
     wandb.login()
     parser = ArgumentParser()
     parser.add_argument('--data-dir', help='Mapillary directory')
-    parser.add_argument('--model', choices=['resnet_oc_lw', 'resnet_oc', 'resnet_ocr', 'resnet_ocold'], help='Tell me what to train')
+    parser.add_argument('--model', choices=['resnet_oc_lw', 'resnet_oc', 'resnet_moc', 'resnet_ocr', 'resnet_ocold'], help='Tell me what to train')
+    parser.add_argument('--loss', default='BCE', help='Loss name, either BCE or Focal')
     parser.add_argument('--height', type=int, default=1080, help='Height of images, nothing to add')
     parser.add_argument('--batch-size', type=int, default=1)
     parser.add_argument('--model-path', required=True, help='Where to load your model from')
     parser.add_argument('--wandb', action='store_true', help='Whether to log metrics to wandb')    
+    parser.add_argument('--disable-cuda', action='store_true', help='Disable CUDA')
     parser.add_argument('--project-name', default='OC Results', help='Project name for weights and Biases')
     main(parser.parse_args())

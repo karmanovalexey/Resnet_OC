@@ -59,7 +59,7 @@ class _SelfAttentionBlock(nn.Module):
         query = self.f_query(x).view(batch_size, self.value_channels, -1)
 
         sim_map = torch.matmul(query, key)
-        sim_map = ((h*w)**-.5) * sim_map
+        sim_map = ((h*w)**(-.5)) * sim_map
         sim_map = F.softmax(sim_map, dim=-1)
 
         context = torch.matmul(value, sim_map)

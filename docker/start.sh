@@ -2,6 +2,6 @@ docker run \
             --gpus all -it \
             --rm \
             --ipc=host \
-            -v /media/alexey/HDD2/Mapillary:/workspace/Mapillary \
-            -v /home/alexey/development/Resnet_OC:/workspace/Resnet_OC \
-            resnet_oc
+            -v /media/alexey/HDD/Mapillary:/workspace/Mapillary \
+            -v /home/alexey/development_2/Resnet_OC:/workspace/Resnet_OC \
+            resnet
