@@ -55,7 +55,7 @@ def get_resnet34_base_oc_layer3(num_classes=66, pretrained_backbone=False):
     return_layers = {'layer3': 'out'}
     inplanes = 1024 // inplanes_scale_factor
     outplanes = 512
-    
+    #256x68x120
     backbone = IntermediateLayerGetter(backbone, return_layers=return_layers)
     model = ResNet_Base_OC(backbone, inplanes, outplanes, num_classes)
     

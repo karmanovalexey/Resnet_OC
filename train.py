@@ -13,7 +13,9 @@ from torch.optim import Adam
 from models.resnet_oc.resnet_oc import get_resnet34_oc
 from models.resnet_moc.resnet_moc import get_resnet34_moc
 from models.resnet_oc_lw.resnet_oc_lw import get_resnet34_oc_lw
+from models.resnet_ocold.model import get_resnet34_base_oc_layer3
 from models.resnet_ocr.resnet_ocr import get_resnet34_ocr
+from models.resnest_moc.resnest_moc import get_resnest50_moc
 from val import val, val_ocr
 from utils.mapillary import mapillary
 from utils.loss import Loss
@@ -29,6 +31,10 @@ def get_model(model_name, pretrained=False):
         return get_resnet34_ocr(pretrained)
     elif model_name == 'resnet_moc':
         return get_resnet34_moc(pretrained)
+    elif model_name == 'resnest_moc':
+        return get_resnest50_moc(pretrained)
+    elif model_name == 'resnet_ocold':
+        return get_resnet34_base_oc_layer3(66, pretrained)
     else:
         raise NotImplementedError('Unknown model')
 
@@ -44,7 +50,7 @@ def get_last_state(path):
 def train(args):
     #Get training data
     assert os.path.exists(args.data_dir), "Error: datadir (dataset directory) could not be loaded"
-    dataset_train = mapillary(args.data_dir, 'train', height=args.height, part=0.001)
+    dataset_train = mapillary(args.data_dir, 'train', height=args.height, part=1.)
     loader = DataLoader(dataset_train, num_workers=4, batch_size=args.batch_size, shuffle=True)
     print('Loaded', len(loader), 'batches')
 
@@ -103,9 +109,9 @@ def train(args):
         scheduler.step()
 
         if args.model == 'resnet_ocr': 
-            print('Val', val_ocr(args, model, part=0.05))
+            print('Val', val_ocr(args, model, part=0.1))
         else:
-            print('Val', val(args, model, part=0.05))
+            print('Val', val(args, model, part=0.1))
         
         if args.epochs_save > 0 and epoch > 0 and epoch % args.epochs_save == 0:
             filename = f'{savedir}/model-{epoch}.pth'
@@ -144,7 +150,7 @@ if __name__== '__main__':
     parser = ArgumentParser()
     
     parser.add_argument('--data-dir', required=True, help='Mapillary directory')
-    parser.add_argument('--model', required=True, choices=['resnet_oc_lw', 'resnet_oc', 'resnet_ocr', 'resnet_moc'], help='Tell me what to train')
+    parser.add_argument('--model', required=True, choices=['resnest_moc', 'resnet_oc_lw', 'resnet_oc', 'resnet_ocr', 'resnet_moc', 'resnet_ocold'], help='Tell me what to train')
     parser.add_argument('--loss', default='BCE', help='Loss name, either BCE or Focal')
     parser.add_argument('--height', type=int, default=600, help='Height of images, nothing to add')
     parser.add_argument('--num-epochs', type=int, default=10, help='If you use resume, give a number considering for how long it trained')

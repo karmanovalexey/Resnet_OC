@@ -1,2 +1,2 @@
 #!/bin/sh
-python3 train.py --data-dir /workspace/Mapillary  --model resnet_ocr --loss BCE --height 1080 --num-epochs 100 --batch-size 1 --wandb --pretrained --project-name Resnet-MOC-Training --save-dir resnet_ocr
+python3 train.py --data-dir /workspace/Mapillary  --model resnest_moc --loss BCE --height 800 --wandb --num-epochs 50 --batch-size 2 --pretrained --project-name resnest --save-dir resnest_moc

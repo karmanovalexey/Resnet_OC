@@ -8,18 +8,16 @@ from collections import OrderedDict
 
 from .base_oc_block import BaseOC_Module
 
-from .resnet_backbone import Resnet34
+from .resnest_backbone import Resnest50
 
-def get_resnet34_moc(pretrained, num_classes=66):
-
-    replace_stride_with_dilation = [False, False, False]
+def get_resnest50_moc(pretrained, num_classes=66):
     inplanes_scale_factor = 4
     
     
     inplanes = 1024 // inplanes_scale_factor
     outplanes = 128
     
-    backbone = Resnet34(pretrained)
+    backbone = Resnest50(pretrained)
     model = ResNet_Base_OC(backbone, inplanes, outplanes, num_classes)
     
     return model
@@ -45,7 +43,8 @@ class ResNet_Base_OC(nn.Module):
         input_shape = x.shape[-2:]
         (h,w) = input_shape
         x = self.backbone(x)
-        x = F.interpolate(x, size=(h//4, w//4), mode='bilinear', align_corners=True)
+        # print(x.shape)
+        # x = F.interpolate(x, size=(h//4, w//4), mode='bilinear', align_corners=True)
         x = self.context(x)
         x = self.cls(x)
         x = F.interpolate(x, size=input_shape, mode='bilinear', align_corners=True)
