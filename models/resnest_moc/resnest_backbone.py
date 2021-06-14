@@ -12,9 +12,9 @@ def forward(self, x):
     x = self.maxpool(x)
 
     x = self.layer1(x)
-    #x = self.layer2(x)
-    #x = self.layer3(x)
-    return x
+    mid = self.layer2(x)
+    x = self.layer3(mid)
+    return mid, x
 
 def Resnest50(pretrained):
     r"""ResNest-50 model from

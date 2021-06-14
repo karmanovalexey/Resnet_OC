@@ -77,7 +77,7 @@ class Video(Dataset):
         self.data_dir = data_dir
         self.filenames = [os.path.join(dp, f) for dp, dn, fn in os.walk(os.path.expanduser(self.data_dir)) for f in fn if f.endswith(".png")]
         self.filenames.sort()
-        self.filenames = self.filenames[:90]
+        #self.filenames = self.filenames[:10]
         self.co_transform = Transform(height=height)
 
     def __getitem__(self, index):
@@ -91,17 +91,22 @@ class Video(Dataset):
         return len(self.filenames)
 
 def make_video(image_folder, fps):
+    print('fps is', fps)
     video_name = image_folder + '/video.avi'
+    print(video_name)
 
     images = [img for img in os.listdir(image_folder) if img.endswith(".png")]
     images.sort(key=natural_keys)
     frame = cv2.imread(os.path.join(image_folder, images[0]))
     height, width, layers = frame.shape
 
-    video = cv2.VideoWriter(video_name, 0, fps, (width,height))
+    video = cv2.VideoWriter(video_name, 0, 24, (width,height))
 
     for image in images:
-        video.write(cv2.imread(os.path.join(image_folder, image)))
+        img = cv2.imread(os.path.join(image_folder, image))
+        text_to_write = str(int(fps))+' fps    (' + str(height) + ',' + str(width) +') res'
+        img = cv2.putText(img,text_to_write,(10,30), cv2.FONT_HERSHEY_SIMPLEX, 0.5,(255,255,255),2)
+        video.write(img)
 
     cv2.destroyAllWindows()
     video.release()
@@ -125,7 +130,7 @@ def main(args):
     loader = DataLoader(data, num_workers=4, batch_size=1, shuffle=False)
 
     model = get_model(args.model, False).to(device=args.device)
-
+    # model = torch.nn.DataParallel(model)
     checkpoint = load_checkpoint(args.load_dir)
     model.load_state_dict(checkpoint['model'])
 
@@ -139,7 +144,10 @@ def main(args):
             torch.cuda.synchronize()
             t1 = perf_counter()
 
-            outputs = model(images)
+            if args.model == 'resnet_ocr':
+                aux, outputs = model(images)
+            else:
+                outputs = model(images)
 
             torch.cuda.synchronize()
             t2 = perf_counter()

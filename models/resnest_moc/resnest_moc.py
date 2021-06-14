@@ -11,7 +11,7 @@ from .base_oc_block import BaseOC_Module
 from .resnest_backbone import Resnest50
 
 def get_resnest50_moc(pretrained, num_classes=66):
-    inplanes_scale_factor = 4
+    inplanes_scale_factor = 1
     
     
     inplanes = 1024 // inplanes_scale_factor
@@ -37,15 +37,20 @@ class ResNet_Base_OC(nn.Module):
                           dropout=0.05, 
                           sizes=([1]))
             )
+        self.equal = nn.Conv2d(inplanes // 2, outplanes, kernel_size=1, stride=1, padding=0, bias=True)
         self.cls = nn.Conv2d(outplanes, num_classes, kernel_size=1, stride=1, padding=0, bias=True)
         
     def forward(self, x):
         input_shape = x.shape[-2:]
         (h,w) = input_shape
-        x = self.backbone(x)
-        # print(x.shape)
-        # x = F.interpolate(x, size=(h//4, w//4), mode='bilinear', align_corners=True)
+        mid, x = self.backbone(x)
+        #print(x.shape)
+
         x = self.context(x)
+        x = F.interpolate(x, size=(h//4, w//4), mode='bilinear', align_corners=True)
+        mid = F.interpolate(mid, size=(h//4, w//4), mode='bilinear', align_corners=True)
+        mid = self.equal(mid)
+        x = mid+x
         x = self.cls(x)
         x = F.interpolate(x, size=input_shape, mode='bilinear', align_corners=True)
         

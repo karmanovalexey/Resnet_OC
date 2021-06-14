@@ -50,7 +50,7 @@ def get_last_state(path):
 def train(args):
     #Get training data
     assert os.path.exists(args.data_dir), "Error: datadir (dataset directory) could not be loaded"
-    dataset_train = mapillary(args.data_dir, 'train', height=args.height, part=1.)
+    dataset_train = mapillary(args.data_dir, 'train', height=args.height, part=1)
     loader = DataLoader(dataset_train, num_workers=4, batch_size=args.batch_size, shuffle=True)
     print('Loaded', len(loader), 'batches')
 
@@ -61,7 +61,7 @@ def train(args):
     savedir = args.save_dir
     savedir = f'./save/{savedir}'
 
-    optimizer = Adam(model.parameters(), 5e-4, (0.9, 0.999),  eps=1e-08, weight_decay=1e-4)
+    optimizer = Adam(model.parameters(), 3e-4, (0.9, 0.999),  eps=1e-08, weight_decay=1e-4)
     scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer,
                                                      lambda x: (1 - x / (len(loader) * args.num_epochs)) ** 0.9)
 
