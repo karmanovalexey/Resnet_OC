@@ -12,7 +12,7 @@ def forward(self, x):
     x = self.maxpool(x)
 
     mid = self.layer1(x)
-    x = self.layer2(x)
+    x = self.layer2(mid)
     #x = self.layer3(mid)
     return mid, x
 
