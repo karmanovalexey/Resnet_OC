@@ -67,6 +67,7 @@ def train(args):
 
     
     start_epoch = 1
+    best_metric = 0
     if args.resume:
         #Must load weights, optimizer, epoch and best value.
         file_resume = savedir + '/model-{}.pth'.format(get_last_state(savedir))
@@ -109,12 +110,16 @@ def train(args):
         scheduler.step()
 
         if args.model == 'resnet_ocr': 
-            print('Val', val_ocr(args, model, part=0.1))
+            last_metric = val_ocr(args, model, part=0.2)
+            print('Val', last_metric)
         else:
-            print('Val', val(args, model, part=0.1))
-        
-        if args.epochs_save > 0 and epoch > 0 and epoch % args.epochs_save == 0:
-            filename = f'{savedir}/model-{epoch}.pth'
+            last_metric = val(args, model, part=0.2)
+            print('Val', last_metric)
+
+        if int(last_metric[0]) > best_metric:
+            best_metric = int(last_metric[0])
+            #if args.epochs_save > 0 and epoch > 0 and epoch % args.epochs_save == 0:
+            filename = f'{savedir}/{args.model}.pth'
             torch.save({'model':model.state_dict(), 'opt':optimizer.state_dict(),'scheduler':scheduler.state_dict(), 'epoch':epoch}, filename)
             print(f'save: {filename} (epoch: {epoch})')
     
