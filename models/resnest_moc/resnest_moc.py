@@ -11,7 +11,7 @@ from .base_oc_block import BaseOC_Module
 from .resnest_backbone import Resnest50
 
 def get_resnest50_moc(pretrained, num_classes=66):
-    inplanes_scale_factor = 1
+    inplanes_scale_factor = 2
     
     
     inplanes = 1024 // inplanes_scale_factor
@@ -45,17 +45,17 @@ class ResNet_Base_OC(nn.Module):
         input_shape = x.shape[-2:]
         (h,w) = input_shape
         mid, x = self.backbone(x)
-        #mid -- inplanes/2xh/8
-        #x -- inplanesxh/16
+        #mid -- inplanes/2xh/4
+        #x -- inplanesxh/8
         x = self.equalize_out(x)
         mid = self.equalize_mid(mid)
 
-        x = F.interpolate(x, size=(h//2, w//2), mode='bilinear', align_corners=True)
-        mid = F.interpolate(mid, size=(h//2, w//2), mode='bilinear', align_corners=True)
+        x = F.interpolate(x, size=input_shape, mode='bilinear', align_corners=True)
+        mid = F.interpolate(mid, size=input_shape, mode='bilinear', align_corners=True)
 
         x = mid+x
         x = self.context(x)
-        x = F.interpolate(x, size=input_shape, mode='bilinear', align_corners=True)
+        #x = F.interpolate(x, size=input_shape, mode='bilinear', align_corners=True)
         x = self.cls(x)
         
         return x

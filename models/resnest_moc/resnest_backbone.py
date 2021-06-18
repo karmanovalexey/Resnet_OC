@@ -11,9 +11,9 @@ def forward(self, x):
     x = self.relu(x)
     x = self.maxpool(x)
 
-    x = self.layer1(x)
-    mid = self.layer2(x)
-    x = self.layer3(mid)
+    mid = self.layer1(x)
+    x = self.layer2(x)
+    #x = self.layer3(mid)
     return mid, x
 
 def Resnest50(pretrained):
