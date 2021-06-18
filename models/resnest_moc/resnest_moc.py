@@ -50,12 +50,12 @@ class ResNet_Base_OC(nn.Module):
         x = self.equalize_out(x)
         mid = self.equalize_mid(mid)
 
-        x = F.interpolate(x, size=(h//4, w//4), mode='bilinear', align_corners=True)
-        mid = F.interpolate(mid, size=(h//4, w//4), mode='bilinear', align_corners=True)
+        x = F.interpolate(x, size=(h//2, w//2), mode='bilinear', align_corners=True)
+        mid = F.interpolate(mid, size=(h//2, w//2), mode='bilinear', align_corners=True)
 
         x = mid+x
-        x = F.interpolate(x, size=input_shape, mode='bilinear', align_corners=True)
         x = self.context(x)
+        x = F.interpolate(x, size=input_shape, mode='bilinear', align_corners=True)
         x = self.cls(x)
         
         return x
