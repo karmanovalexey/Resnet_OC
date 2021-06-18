@@ -28,8 +28,8 @@ class ResNet_Base_OC(nn.Module):
         super(ResNet_Base_OC, self).__init__()
         self.backbone = backbone
         self.context = nn.Sequential(
-            nn.Conv2d(inplanes, outplanes, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(outplanes),
+            #nn.Conv2d(inplanes, outplanes, kernel_size=3, stride=1, padding=1),
+            #nn.BatchNorm2d(outplanes),
             BaseOC_Module(in_channels=outplanes, 
                           out_channels=outplanes, 
                           key_channels=outplanes // 2, 
