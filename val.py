@@ -123,7 +123,7 @@ def val(args, model, part=1.,):
         wandb.log({args.model:[wandb.Image(i) for i in examples]})
 
 
-    return {'iou':iouVal.data, 'fps':1./np.mean(time_val), 'mean_time':np.mean(val_loss)}
+    return {'iou':iouVal.data, 'fps':1./np.mean(time_val), 'mean_time':np.mean(time_val)}
 
 def val_ocr(args, model, part=1.,):
     dataset_val = mapillary(args.data_dir, 'val', height=args.height, part=part) # Taking only 10% of images

@@ -37,21 +37,25 @@ class ResNet_Base_OC(nn.Module):
                           dropout=0.05, 
                           sizes=([1]))
             )
-        self.equal = nn.Conv2d(inplanes // 2, outplanes, kernel_size=1, stride=1, padding=0, bias=True)
+        self.equalize_mid = nn.Conv2d(inplanes // 2, outplanes, kernel_size=1, stride=1, padding=0, bias=True)
+        self.equalize_out = nn.Conv2d(inplanes, outplanes, kernel_size=1, stride=1, padding=0, bias=True)
         self.cls = nn.Conv2d(outplanes, num_classes, kernel_size=1, stride=1, padding=0, bias=True)
         
     def forward(self, x):
         input_shape = x.shape[-2:]
         (h,w) = input_shape
         mid, x = self.backbone(x)
-        #print(x.shape)
+        #mid -- inplanes/2xh/8
+        #x -- inplanesxh/16
+        x = self.equalize_out(x)
+        mid = self.equalize_mid(mid)
 
-        x = self.context(x)
-        x = F.interpolate(x, size=(h//8, w//8), mode='bilinear', align_corners=True)
-        mid = F.interpolate(mid, size=(h//8, w//8), mode='bilinear', align_corners=True)
-        mid = self.equal(mid)
+        x = F.interpolate(x, size=(h//4, w//4), mode='bilinear', align_corners=True)
+        mid = F.interpolate(mid, size=(h//4, w//4), mode='bilinear', align_corners=True)
+
         x = mid+x
-        x = self.cls(x)
         x = F.interpolate(x, size=input_shape, mode='bilinear', align_corners=True)
+        x = self.context(x)
+        x = self.cls(x)
         
         return x

@@ -116,8 +116,8 @@ def train(args):
             last_metric = val(args, model, part=0.2)
             print('Val', last_metric)
 
-        if int(last_metric[0]) > best_metric:
-            best_metric = int(last_metric[0])
+        if float(last_metric['iou']) > best_metric:
+            best_metric = float(last_metric['iou'])
             #if args.epochs_save > 0 and epoch > 0 and epoch % args.epochs_save == 0:
             filename = f'{savedir}/{args.model}.pth'
             torch.save({'model':model.state_dict(), 'opt':optimizer.state_dict(),'scheduler':scheduler.state_dict(), 'epoch':epoch}, filename)
