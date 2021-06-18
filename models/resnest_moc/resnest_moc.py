@@ -37,8 +37,14 @@ class ResNet_Base_OC(nn.Module):
                           dropout=0.05, 
                           sizes=([1]))
             )
-        self.equalize_mid = nn.Conv2d(inplanes * 2, inplanes, kernel_size=1, stride=1, padding=0, bias=True)
-        self.equalize_out = nn.Conv2d(inplanes * 4, inplanes, kernel_size=1, stride=1, padding=0, bias=True)
+        self.equalize_mid = nn.Sequential(
+            nn.Conv2d(inplanes * 2, inplanes, kernel_size=1, stride=1, padding=0, bias=True),
+            nn.BatchNorm2d(inplanes),
+        )
+        self.equalize_out = nn.Sequential(
+            nn.Conv2d(inplanes * 4, inplanes, kernel_size=1, stride=1, padding=0, bias=True),
+            nn.BatchNorm2d(inplanes),
+        )
         self.cls = nn.Conv2d(outplanes, num_classes, kernel_size=1, stride=1, padding=0, bias=True)
         
     def forward(self, x):
@@ -49,8 +55,8 @@ class ResNet_Base_OC(nn.Module):
         x = self.equalize_out(x)
         mid = self.equalize_mid(mid)
 
-        x = F.interpolate(x, size=(h//2, w//2), mode='bilinear', align_corners=True)
-        mid = F.interpolate(mid, size=(h//2, w//2), mode='bilinear', align_corners=True)
+        x = F.interpolate(x, size=(h//4, w//4), mode='bilinear', align_corners=True)
+        mid = F.interpolate(mid, size=(h//4, w//4), mode='bilinear', align_corners=True)
 
         x = mid+x
         x = self.context(x)

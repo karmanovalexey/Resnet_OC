@@ -16,6 +16,7 @@ from models.resnet_oc_lw.resnet_oc_lw import get_resnet34_oc_lw
 from models.resnet_ocold.model import get_resnet34_base_oc_layer3
 from models.resnet_ocr.resnet_ocr import get_resnet34_ocr
 from models.resnest_moc.resnest_moc import get_resnest50_moc
+from models.resnest_dumb.resnest_moc import get_resnest50_moc
 from val import val, val_ocr
 from utils.mapillary import mapillary
 from utils.loss import Loss
@@ -155,7 +156,7 @@ if __name__== '__main__':
     parser = ArgumentParser()
     
     parser.add_argument('--data-dir', required=True, help='Mapillary directory')
-    parser.add_argument('--model', required=True, choices=['resnest_moc', 'resnet_oc_lw', 'resnet_oc', 'resnet_ocr', 'resnet_moc', 'resnet_ocold'], help='Tell me what to train')
+    parser.add_argument('--model', required=True, choices=['resnest_moc', 'resnet_oc_lw', 'resnet_oc', 'resnet_ocr', 'resnet_moc', 'resnet_ocold', 'resnest_dumb'], help='Tell me what to train')
     parser.add_argument('--loss', default='BCE', help='Loss name, either BCE or Focal')
     parser.add_argument('--height', type=int, default=600, help='Height of images, nothing to add')
     parser.add_argument('--num-epochs', type=int, default=10, help='If you use resume, give a number considering for how long it trained')
