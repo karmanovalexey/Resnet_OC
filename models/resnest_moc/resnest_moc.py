@@ -47,8 +47,8 @@ class ResNet_Base_OC(nn.Module):
         #print(x.shape)
 
         x = self.context(x)
-        x = F.interpolate(x, size=(h//4, w//4), mode='bilinear', align_corners=True)
-        mid = F.interpolate(mid, size=(h//4, w//4), mode='bilinear', align_corners=True)
+        x = F.interpolate(x, size=(h//8, w//8), mode='bilinear', align_corners=True)
+        mid = F.interpolate(mid, size=(h//8, w//8), mode='bilinear', align_corners=True)
         mid = self.equal(mid)
         x = mid+x
         x = self.cls(x)
