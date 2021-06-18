@@ -16,7 +16,7 @@ from models.resnet_oc_lw.resnet_oc_lw import get_resnet34_oc_lw
 from models.resnet_ocold.model import get_resnet34_base_oc_layer3
 from models.resnet_ocr.resnet_ocr import get_resnet34_ocr
 from models.resnest_moc.resnest_moc import get_resnest50_moc
-from models.resnest_dumb.resnest_moc import get_resnest50_moc
+from models.resnest_dumb.resnest_moc import get_resnest50_dumb
 from val import val, val_ocr
 from utils.mapillary import mapillary
 from utils.loss import Loss
@@ -34,6 +34,8 @@ def get_model(model_name, pretrained=False):
         return get_resnet34_moc(pretrained)
     elif model_name == 'resnest_moc':
         return get_resnest50_moc(pretrained)
+    elif model_name == 'resnest_dumb':
+        return get_resnest50_dumb(pretrained)
     elif model_name == 'resnet_ocold':
         return get_resnet34_base_oc_layer3(66, pretrained)
     else:

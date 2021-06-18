@@ -10,7 +10,7 @@ from .base_oc_block import BaseOC_Module
 
 from .resnest_backbone import Resnest50
 
-def get_resnest50_moc(pretrained, num_classes=66):
+def get_resnest50_dumb(pretrained, num_classes=66):
     inplanes_scale_factor = 1
     
     
