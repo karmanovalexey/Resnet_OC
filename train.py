@@ -108,7 +108,7 @@ def train(args):
 
             if step % 100 == 0:
                 average = sum(epoch_loss) / len(epoch_loss)
-                wandb.log({"epoch":epoch, "loss":average, 'lr':scheduler.get_last_lr()}, step=(epoch-1)*18000 + step*args.batch_size)
+                wandb.log({"epoch":epoch, "loss":average, 'lr':scheduler.get_last_lr()[0]}, step=(epoch-1)*18000 + step*args.batch_size)
         
         scheduler.step()
 

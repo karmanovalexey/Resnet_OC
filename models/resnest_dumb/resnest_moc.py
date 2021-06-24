@@ -35,21 +35,15 @@ class ResNet_Base_OC(nn.Module):
             nn.Conv2d(inplanes // 2, inplanes // 4, kernel_size=1, stride=1, padding=0, bias=True),
             nn.BatchNorm2d(inplanes // 4),
         )
-        self.up3 = nn.Sequential(
-            nn.Conv2d(inplanes // 4, inplanes // 8, kernel_size=1, stride=1, padding=0, bias=True),
-            nn.BatchNorm2d(inplanes // 8),
-        )
-        self.cls = nn.Conv2d(inplanes // 8, num_classes, kernel_size=1, stride=1, padding=0, bias=True)
+        self.cls = nn.Conv2d(inplanes // 4, num_classes, kernel_size=1, stride=1, padding=0, bias=True)
         
     def forward(self, x):
         input_shape = x.shape[-2:]
         (h,w) = input_shape
         x = self.backbone(x)
-        self.up1(x)
-        x = F.interpolate(x, size=(h // 4,w // 4), mode='bilinear', align_corners=True)
-        self.up2(x)
-        x = F.interpolate(x, size=(h // 2,w // 2), mode='bilinear', align_corners=True)
-        self.up3(x)
+        x = self.up1(x)
+        x = F.interpolate(x, size=(h // 8,w // 8), mode='bilinear', align_corners=True)
+        x = self.up2(x)
         x = F.interpolate(x, size=input_shape, mode='bilinear', align_corners=True)
         x = self.cls(x)
         
