@@ -66,7 +66,7 @@ def train(args):
 
     optimizer = Adam(model.parameters(), 3e-4, (0.9, 0.999),  eps=1e-08, weight_decay=1e-4)
     scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer,
-                                                     lambda x: (1 - x / (len(loader) * args.num_epochs)) ** 0.9)
+                                                     lambda x: (1 - x / args.num_epochs) ** 0.9)
 
     
     start_epoch = 1
