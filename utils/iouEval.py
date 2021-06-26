@@ -9,7 +9,7 @@ class iouEval:
 
     def __init__(self, nClasses, device, ignoreIndex=65):
         self.nClasses = nClasses
-        self.deivce = device
+        self.device = device
         self.ignoreIndex = ignoreIndex if nClasses>ignoreIndex else -1 #if ignoreIndex is larger than nClasses, consider no ignoreIndex
         self.reset()
         self.iu = []
