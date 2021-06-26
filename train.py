@@ -142,7 +142,7 @@ def main(args):
                     savedir = args.save_dir)
     args.device = None
     if not args.disable_cuda and torch.cuda.is_available():
-        args.device = torch.device('cuda')
+        args.device = torch.device('cuda:2')
     else:
         args.device = torch.device('cpu')
     
