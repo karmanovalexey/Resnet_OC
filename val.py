@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import torch
+from torch._C import device
 import wandb
 from PIL import Image
 
@@ -74,7 +75,7 @@ def val(args, model, part=1.,):
 
     criterion = Loss(args)
     model.eval()
-    iouEvalVal = iouEval(NUM_CLASSES)
+    iouEvalVal = iouEval(NUM_CLASSES, args.device)
     color_transform = Colorize(NUM_CLASSES)
     
     with torch.no_grad():
