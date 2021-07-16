@@ -104,7 +104,7 @@ class SegFormerHead(nn.Module):
 
         self.linear_pred = nn.Conv2d(embedding_dim, self.num_classes, kernel_size=1)
 
-    def forward(self, inputs):
+    def forward(self, inputs, sides):
         x = self._transform_inputs(inputs)  # len=4, 1/4,1/8,1/16,1/32
         c1, c2, c3, c4 = x
 
@@ -127,7 +127,13 @@ class SegFormerHead(nn.Module):
         x = self.dropout(_c)
         x = self.linear_pred(x)
 
-        return x
+        out = resize(
+            input=x,
+            size=sides,
+            mode='bilinear',
+            align_corners=self.align_corners)
+
+        return out
 
 
     def _init_inputs(self, in_channels, in_index, input_transform):

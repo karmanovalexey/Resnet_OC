@@ -18,6 +18,7 @@ from models.resnet_moc.resnet_moc import get_resnet34_moc
 from models.resnet_oc_lw.resnet_oc_lw import get_resnet34_oc_lw
 from models.resnet_ocr.resnet_ocr import get_resnet34_ocr
 from models.resnet_ocold.model import get_resnet34_base_oc_layer3
+from models.segformer.mit_back import mit_b0
 
 NUM_CLASSES = 66
 
@@ -43,6 +44,8 @@ def get_model(model_name, pretrained=False):
         return get_resnet34_moc(pretrained)
     elif model_name == 'resnet_ocold':
         return get_resnet34_base_oc_layer3(NUM_CLASSES, pretrained)
+    elif model_name == 'segformer_b0':
+        return mit_b0()
     else:
         raise NotImplementedError('Unknown model')
 
@@ -169,7 +172,7 @@ def main(args):
 if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('--data-dir', help='Data to visualize')
-    parser.add_argument('--model', choices=['resnet_oc_lw', 'resnet_oc', 'resnet_moc', 'resnet_ocr', 'resnet_ocold', 'resnest_moc'], help='Tell me what to use')
+    parser.add_argument('--model', choices=['resnet_oc_lw', 'resnet_oc', 'resnet_moc', 'resnet_ocr', 'resnet_ocold', 'resnest_moc', 'segformer_b0'], help='Tell me what to use')
     parser.add_argument('--height', type=int, default=1080, help='Height of images to resize, nothing to add')
     parser.add_argument('--load-dir', required=True, help='Where to load your model from')
     parser.add_argument('--save-dir', required=True, help='Where to save output')
