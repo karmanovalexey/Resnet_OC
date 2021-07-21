@@ -2,6 +2,7 @@ from .mit import mit_b0
 from .seg_head import SegFormerHead
 
 import torch.nn as nn
+from torchvision.transforms import Resize, InterpolationMode
 
 class Segformer(nn.Module):
     def __init__(self):
@@ -12,6 +13,7 @@ class Segformer(nn.Module):
     def forward(self, x):
         x = self.backbone(x)
         x = self.decode_head(x)
+        x = Resize((1080,1920), InterpolationMode.BILINEAR)(x)
         return x
 
 def main(path):

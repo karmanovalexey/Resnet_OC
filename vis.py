@@ -18,7 +18,7 @@ from models.resnet_moc.resnet_moc import get_resnet34_moc
 from models.resnet_oc_lw.resnet_oc_lw import get_resnet34_oc_lw
 from models.resnet_ocr.resnet_ocr import get_resnet34_ocr
 from models.resnet_ocold.model import get_resnet34_base_oc_layer3
-from models.segformer.mit_back import mit_b0
+from models.segformer.segformer import Segformer
 
 NUM_CLASSES = 66
 
@@ -45,7 +45,7 @@ def get_model(model_name, pretrained=False):
     elif model_name == 'resnet_ocold':
         return get_resnet34_base_oc_layer3(NUM_CLASSES, pretrained)
     elif model_name == 'segformer_b0':
-        return mit_b0()
+        return Segformer()
     else:
         raise NotImplementedError('Unknown model')
 
@@ -78,7 +78,8 @@ class Transform(object):
 class Video(Dataset):
     def __init__(self, data_dir, height=600):
         self.data_dir = data_dir
-        self.filenames = [os.path.join(dp, f) for dp, dn, fn in os.walk(os.path.expanduser(self.data_dir)) for f in fn if f.endswith(".png")]
+        print(self.data_dir)
+        self.filenames = [os.path.join(dp, f) for dp, dn, fn in os.walk(os.path.expanduser(self.data_dir)) for f in fn if f.endswith(".jpg")]
         self.filenames.sort()
         #self.filenames = self.filenames[:10]
         self.co_transform = Transform(height=height)
@@ -93,7 +94,7 @@ class Video(Dataset):
     def __len__(self):
         return len(self.filenames)
 
-def make_video(image_folder, fps):
+def make_video(image_folder, fps, vis_fps):
     print('fps is', fps)
     video_name = image_folder + '/video.avi'
     print(video_name)
@@ -105,11 +106,12 @@ def make_video(image_folder, fps):
 
     video = cv2.VideoWriter(video_name, 0, 24, (width,height))
 
-    for image in images:
-        img = cv2.imread(os.path.join(image_folder, image))
-        text_to_write = str(int(fps))+' fps    (' + str(height) + ',' + str(width) +') res'
-        img = cv2.putText(img,text_to_write,(10,30), cv2.FONT_HERSHEY_SIMPLEX, 0.5,(255,255,255),2)
-        video.write(img)
+    if vis_fps:
+        for image in images: # uncomment for fps visualization
+            img = cv2.imread(os.path.join(image_folder, image))
+            text_to_write = str(int(fps))+' fps    (' + str(height) + ',' + str(width) +') res'
+            img = cv2.putText(img,text_to_write,(10,30), cv2.FONT_HERSHEY_SIMPLEX, 0.5,(255,255,255),2)
+            video.write(img)
 
     cv2.destroyAllWindows()
     video.release()
@@ -131,11 +133,16 @@ def main(args):
     
     data = Video(args.data_dir, height=args.height)
     loader = DataLoader(data, num_workers=4, batch_size=1, shuffle=False)
+    print('Loaded', len(loader), 'batches')
 
     model = get_model(args.model, False).to(device=args.device)
-    # model = torch.nn.DataParallel(model)
+    if args.model == 'resnet_ocr':
+        model = torch.nn.DataParallel(model)
     checkpoint = load_checkpoint(args.load_dir)
-    model.load_state_dict(checkpoint['model'])
+    if args.model == 'segformer_b0':
+        model.load_state_dict(checkpoint['state_dict'])
+    else:    
+        model.load_state_dict(checkpoint['model'])
 
     model.eval()
     color_transform = Colorize(NUM_CLASSES)
@@ -164,10 +171,11 @@ def main(args):
             save_point = savedir + '/' + str(i) + '.png'
             img.save(save_point)
             os.chmod(save_point, 0o777)
+
     fps = 1./np.mean(time)
+    print(fps)
 
-
-    make_video(savedir, fps)
+    # make_video(savedir, fps, args.vis_fps)
 
 if __name__ == '__main__':
     parser = ArgumentParser()
@@ -176,6 +184,6 @@ if __name__ == '__main__':
     parser.add_argument('--height', type=int, default=1080, help='Height of images to resize, nothing to add')
     parser.add_argument('--load-dir', required=True, help='Where to load your model from')
     parser.add_argument('--save-dir', required=True, help='Where to save output')
-    parser.add_argument('--keep_fps', action='store_true', help='Whether to output video in a constant fps, or as the model gives predictions')
+    parser.add_argument('--vis_fps', action='store_true', help='Whether to visualize fps')
     parser.add_argument('--disable-cuda', action='store_true', help='Disable CUDA')
     main(parser.parse_args())

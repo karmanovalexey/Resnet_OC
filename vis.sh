@@ -1,2 +1,2 @@
 #!/bin/sh
-python3 vis.py --data-dir /workspace/video --model resnet_ocold --height 1080 --load-dir ./save/mapillary_resnet_M_base_oc_focal_2_best.pth --save-dir ./visual/ocold_1080
+python3 vis.py --data-dir /workspace/Mapillary/val/1920_1080/images/ --model segformer_b0 --height 1080 --load-dir /workspace/best_models/segformer_b0_best.pth --save-dir ./visual/report/segformer_b0_1080
