@@ -12,10 +12,6 @@ import torch
 from mmcv.cnn import ConvModule, DepthwiseSeparableConvModule
 from collections import OrderedDict
 
-import attr
-
-from IPython import embed
-
 
 def resize(input,
            size=None,

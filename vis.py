@@ -19,6 +19,7 @@ from models.resnet_oc_lw.resnet_oc_lw import get_resnet34_oc_lw
 from models.resnet_ocr.resnet_ocr import get_resnet34_ocr
 from models.resnet_ocold.model import get_resnet34_base_oc_layer3
 from models.segformer.segformer import Segformer
+from models.deeplab.deeplab import Deeplab
 
 NUM_CLASSES = 66
 
@@ -46,6 +47,8 @@ def get_model(model_name, pretrained=False):
         return get_resnet34_base_oc_layer3(NUM_CLASSES, pretrained)
     elif model_name == 'segformer_b0':
         return Segformer()
+    elif model_name == 'deeplab':
+        return Deeplab()
     else:
         raise NotImplementedError('Unknown model')
 
@@ -59,37 +62,47 @@ def load_checkpoint(model_path):
     return checkpoint
 
 class Transform(object):
-    def __init__(self, height=600):
+    def __init__(self, height=600, norm=True):
         self.height = height
+        self.norm = norm
         pass
 
-    def __call__(self, input):
+    def __call__(self, input, size):
         # do something to both images
-        if self.height == 1080:
-            input =  Resize((1080,1920), InterpolationMode.BILINEAR)(input)
-        else:
-            input =  Resize((self.height,self.height*2), InterpolationMode.BILINEAR)(input)
+        # if self.height == 1080:
+        #     input =  Resize((1080,1920), InterpolationMode.BILINEAR)(input)
+        # else:
+        #     input =  Resize((self.height,self.height*2), InterpolationMode.BILINEAR)(input)
         
         input = ToTensor()(input)
-        input = Normalize(mean=[0.485, 0.456, 0.406],
-                                 std=[0.229, 0.224, 0.225])(input)
+
+        if self.norm:
+            input = Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])(input)
+
         return np.array(input)
 
 class Video(Dataset):
-    def __init__(self, data_dir, height=600):
-        self.data_dir = data_dir
+    def __init__(self, args):
+        self.data_dir = args.data_dir
         print(self.data_dir)
-        self.filenames = [os.path.join(dp, f) for dp, dn, fn in os.walk(os.path.expanduser(self.data_dir)) for f in fn if f.endswith(".jpg")]
+        if args.dataset=='Mapillary':
+            self.filenames = [os.path.join(dp, f) for dp, dn, fn in os.walk(os.path.expanduser(self.data_dir)) for f in fn if f.endswith(".jpg")]
+        elif args.dataset=='Kitti':
+            self.filenames = [os.path.join(dp, f) for dp, dn, fn in os.walk(os.path.expanduser(self.data_dir)) for f in fn if f.endswith(".png")]
+        print(len(self.filenames))
         self.filenames.sort()
-        #self.filenames = self.filenames[:10]
-        self.co_transform = Transform(height=height)
+        if args.model=='resnet_ocr':
+            self.co_transform = Transform(height=args.height, norm=False)
+        else:
+            self.co_transform = Transform(height=args.height, norm=True)
+
 
     def __getitem__(self, index):
         filename = self.filenames[index]
         with open(filename, 'rb') as f:
             image = Image.open(f).convert('RGB')
-        image = self.co_transform(input=image)
-        return image
+        image = self.co_transform(input=image, size=image.size)
+        return image, filename
 
     def __len__(self):
         return len(self.filenames)
@@ -131,14 +144,14 @@ def main(args):
     else:
         args.device = torch.device('cpu')
     
-    data = Video(args.data_dir, height=args.height)
+    data = Video(args)
     loader = DataLoader(data, num_workers=4, batch_size=1, shuffle=False)
-    print('Loaded', len(loader), 'batches')
 
     model = get_model(args.model, False).to(device=args.device)
     if args.model == 'resnet_ocr':
         model = torch.nn.DataParallel(model)
     checkpoint = load_checkpoint(args.load_dir)
+    
     if args.model == 'segformer_b0':
         model.load_state_dict(checkpoint['state_dict'])
     else:    
@@ -148,7 +161,7 @@ def main(args):
     color_transform = Colorize(NUM_CLASSES)
     time = []
     with torch.no_grad():
-        for i, images in enumerate(tqdm(loader)):
+        for i, (images, filename) in enumerate(tqdm(loader)):
             images = images.to(device=args.device)
 
             torch.cuda.synchronize()
@@ -164,12 +177,16 @@ def main(args):
 
             time.append((t2 - t1)/images.shape[0])
 
-            outputs = np.moveaxis(np.array(color_transform(outputs[0].cpu().max(0)[1].data.unsqueeze(0))),0,2)
-
-
-            img = Image.fromarray(outputs)
-            save_point = savedir + '/' + str(i) + '.png'
-            img.save(save_point)
+            # outputs = np.moveaxis(np.array(color_transform(outputs[0].cpu().max(0)[1].data.unsqueeze(0))),0,2)
+            # outputs = np.array(outputs[0].cpu().max(0)[1].data)
+            output = outputs.argmax(1)
+            pred = np.asarray(output.cpu(), dtype=np.uint8)
+            save_img = Image.fromarray(pred[0])
+            if args.dataset=='Mapillary':
+                save_point = savedir + '/' + filename[0][42:-4] + '.png'
+            elif args.dataset=='Kitti':
+                save_point = savedir + '/' + filename[0][17:-4] + '.png'
+            save_img.save(save_point, 'PNG')
             os.chmod(save_point, 0o777)
 
     fps = 1./np.mean(time)
@@ -180,7 +197,8 @@ def main(args):
 if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('--data-dir', help='Data to visualize')
-    parser.add_argument('--model', choices=['resnet_oc_lw', 'resnet_oc', 'resnet_moc', 'resnet_ocr', 'resnet_ocold', 'resnest_moc', 'segformer_b0'], help='Tell me what to use')
+    parser.add_argument('--dataset', choices=['Mapillary', 'Kitti'], help='What Dataset')
+    parser.add_argument('--model', choices=['deeplab', 'resnet_oc_lw', 'resnet_oc', 'resnet_moc', 'resnet_ocr', 'resnet_ocold', 'resnest_moc', 'segformer_b0'], help='Tell me what to use')
     parser.add_argument('--height', type=int, default=1080, help='Height of images to resize, nothing to add')
     parser.add_argument('--load-dir', required=True, help='Where to load your model from')
     parser.add_argument('--save-dir', required=True, help='Where to save output')

@@ -3,3 +3,4 @@ save/
 visual/
 .*/
 *.pyc
+docker/start.sh

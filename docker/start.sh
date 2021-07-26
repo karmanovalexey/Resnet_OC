@@ -2,7 +2,8 @@ docker run \
             --gpus all -it \
             --rm \
             --ipc=host \
-            -v /media/alexey/HDD5/Mapillary:/workspace/Mapillary \
-            -v /home/alexey/development/Resnet_OC:/workspace/Resnet_OC \
-            -v /home/alexey/development/best_models/:/workspace/best_models \
+            -v /home/adeshkin/projects/tools/Mapillary/:/workspace/Mapillary \
+            -v /home/adeshkin/projects/p_seg_dyn_map/kitti_360_track_0010_image_00:/workspace/Kitti \
+            -v /home/karmanov_aa/Resnet_OC:/workspace/Resnet_OC \
+            -v /home/karmanov_aa/best_models:/workspace/best_models \
             resnet_oc

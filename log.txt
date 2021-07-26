@@ -1,0 +1,10 @@
+segformer:
+Mapillary - 11.2
+Kitti - 12.9
+Resnet_OCOLD
+Mapillary - 31.5
+Kitti - 31.9
+Resnet_OCR
+Mapillary - 25.9
+Kitti - 43.5
+
