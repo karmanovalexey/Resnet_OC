@@ -1,15 +1,40 @@
-segformer:
-Mapillary - 11.2
+segformer_b0(V100)
+Mapillary - 12.8
 Kitti - 12.9
 
-Resnet_OCOLD
+Resnet_OCOLD(V100)
 Mapillary - 31.5
 Kitti - 31.9
 
-Resnet_OCR
+Resnet_OCR(V100)
 Mapillary - 25.9
 Kitti - 43.5
 
-GCNet(TTAUG on loaded graphic card)
-Mapillary - 
 
+
+
+
+
+
+
+
+
+
+
+
+A100:
+
+DeepLabV3+-Resnet50-d8(A100)
+Mapillary - 5
+
+segformer_b0(A100)
+Mapillary - 19
+
+segformer_b3(A100)
+Mapillary - 5
+
+segformer_b5(A100)
+Mapillary - 4
+
+fcn_unet_s5-d16(A100)
+Mapillary - 0.66

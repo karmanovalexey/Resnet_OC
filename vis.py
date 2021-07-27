@@ -182,6 +182,7 @@ def main(args):
             output = outputs.argmax(1)
             pred = np.asarray(output.cpu(), dtype=np.uint8)
             save_img = Image.fromarray(pred[0])
+            
             if args.dataset=='Mapillary':
                 save_point = savedir + '/' + filename[0][42:-4] + '.png'
             elif args.dataset=='Kitti':

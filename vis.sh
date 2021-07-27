@@ -1,2 +1,2 @@
 #!/bin/sh
-python3 vis.py --data-dir /workspace/Mapillary/val/1920_1080/images/ --dataset Mapillary --model segformer_b0 --height 1080 --load-dir /workspace/best_models/segformer_b0_best.pth --save-dir ./visual/uncol_map/segformer_b0_1080
+python3 vis.py --data-dir /workspace/Mapillary/val/1920_1080/images/ --dataset Mapillary --model resnet_moc --height 1080 --load-dir /workspace/best_models/resnet_moc_best.pth --save-dir ./visual/uncol_map/resnet_moc_1080
