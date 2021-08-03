@@ -11,9 +11,10 @@ class Segformer(nn.Module):
         self.decode_head = SegFormerHead()
 
     def forward(self, x):
+        h, w = x.shape[2], x.shape[3]
         x = self.backbone(x)
         x = self.decode_head(x)
-        x = Resize((1080,1920), InterpolationMode.BILINEAR)(x)
+        x = Resize((h,w), InterpolationMode.BILINEAR)(x)
         return x
 
 def main(path):

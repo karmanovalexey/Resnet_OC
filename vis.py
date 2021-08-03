@@ -91,6 +91,7 @@ class Video(Dataset):
             self.filenames = [os.path.join(dp, f) for dp, dn, fn in os.walk(os.path.expanduser(self.data_dir)) for f in fn if f.endswith(".png")]
         print(len(self.filenames))
         self.filenames.sort()
+        self.filenames = self.filenames
         if args.model=='resnet_ocr':
             self.co_transform = Transform(height=args.height, norm=False)
         else:
@@ -177,11 +178,13 @@ def main(args):
 
             time.append((t2 - t1)/images.shape[0])
 
-            # outputs = np.moveaxis(np.array(color_transform(outputs[0].cpu().max(0)[1].data.unsqueeze(0))),0,2)
-            # outputs = np.array(outputs[0].cpu().max(0)[1].data)
-            output = outputs.argmax(1)
-            pred = np.asarray(output.cpu(), dtype=np.uint8)
-            save_img = Image.fromarray(pred[0])
+            if False:
+                outputs = np.moveaxis(np.array(color_transform(outputs[0].cpu().max(0)[1].data.unsqueeze(0))),0,2)
+                save_img = Image.fromarray(outputs)
+            else:
+                output = outputs.argmax(1)
+                pred = np.asarray(output.cpu(), dtype=np.uint8)
+                save_img = Image.fromarray(pred[0])
             
             if args.dataset=='Mapillary':
                 save_point = savedir + '/' + filename[0][42:-4] + '.png'

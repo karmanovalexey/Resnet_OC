@@ -1,2 +1,2 @@
 #!/bin/sh
-python3 vis.py --data-dir /workspace/Kitti/ --dataset Kitti --model segformer_b0 --height 1080 --load-dir /workspace/best_models/segformer_b0_best.pth --save-dir ./visual/uncol_kit/segformer_b0_1080
+python3 vis.py --data-dir /workspace/Kitti/ --dataset Kitti --model resnet_moc --height 1080 --load-dir /workspace/best_models/resnet_moc_best.pth --save-dir ./visual/uncol_kit/resnet_moc_1080
