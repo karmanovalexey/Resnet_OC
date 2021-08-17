@@ -190,8 +190,8 @@ def main(args):
                 save_point = savedir + '/' + filename[0][42:-4] + '.png'
             elif args.dataset=='Kitti':
                 save_point = savedir + '/' + filename[0][17:-4] + '.png'
-            save_img.save(save_point, 'PNG')
-            os.chmod(save_point, 0o777)
+            # save_img.save(save_point, 'PNG')
+            # os.chmod(save_point, 0o777)
 
     fps = 1./np.mean(time)
     print(fps)
