@@ -58,7 +58,7 @@ def inf(args, model, part=1.,):
     time_val = []
 
     model.eval()
-    iouEvalVal = iouEval(NUM_CLASSES)
+    iouEvalVal = iouEval(NUM_CLASSES, device=args.device)
     color_transform = Colorize(NUM_CLASSES)
     
     with torch.no_grad():
