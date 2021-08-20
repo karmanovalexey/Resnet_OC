@@ -17,7 +17,7 @@ from models.resnet_oc.resnet_oc import get_resnet34_oc
 from models.resnet_moc.resnet_moc import get_resnet34_moc
 from models.resnet_oc_lw.resnet_oc_lw import get_resnet34_oc_lw
 from models.resnet_ocr.resnet_ocr import get_resnet34_ocr
-from models.resnet_ocold.model import get_resnet34_base_oc_layer3
+from models.resnet_m_base_oc.model import get_resnet34_base_oc_layer3
 from models.segformer.segformer import Segformer
 from models.deeplab.deeplab import Deeplab
 
@@ -43,7 +43,7 @@ def get_model(model_name, pretrained=False):
         return get_resnet34_ocr(pretrained)
     elif model_name == 'resnet_moc':
         return get_resnet34_moc(pretrained)
-    elif model_name == 'resnet_ocold':
+    elif model_name == 'resnet_m_base_oc':
         return get_resnet34_base_oc_layer3(NUM_CLASSES, pretrained)
     elif model_name == 'segformer_b0':
         return Segformer()
@@ -53,9 +53,7 @@ def get_model(model_name, pretrained=False):
         raise NotImplementedError('Unknown model')
 
 def load_checkpoint(model_path):
-    #Must load weights, optimizer, epoch and best value.
     file_resume = f'{model_path}'
-    #file_resume = savedir + '/model-{}.pth'.format(get_last_state(savedir))
     assert os.path.exists(file_resume), "No model checkpoint found"
     checkpoint = torch.load(file_resume)
 
@@ -178,7 +176,7 @@ def main(args):
 
             time.append((t2 - t1)/images.shape[0])
 
-            if False:
+            if args.colorize:
                 outputs = np.moveaxis(np.array(color_transform(outputs[0].cpu().max(0)[1].data.unsqueeze(0))),0,2)
                 save_img = Image.fromarray(outputs)
             else:
@@ -190,22 +188,24 @@ def main(args):
                 save_point = savedir + '/' + filename[0][42:-4] + '.png'
             elif args.dataset=='Kitti':
                 save_point = savedir + '/' + filename[0][17:-4] + '.png'
-            # save_img.save(save_point, 'PNG')
-            # os.chmod(save_point, 0o777)
+            save_img.save(save_point, 'PNG')
+            os.chmod(save_point, 0o777)
 
     fps = 1./np.mean(time)
     print(fps)
-
     # make_video(savedir, fps, args.vis_fps)
+
+    return
 
 if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('--data-dir', help='Data to visualize')
     parser.add_argument('--dataset', choices=['Mapillary', 'Kitti'], help='What Dataset')
-    parser.add_argument('--model', choices=['deeplab', 'resnet_oc_lw', 'resnet_oc', 'resnet_moc', 'resnet_ocr', 'resnet_ocold', 'resnest_moc', 'segformer_b0'], help='Tell me what to use')
+    parser.add_argument('--model', choices=['deeplab', 'resnet_oc_lw', 'resnet_oc', 'resnet_moc', 'resnet_ocr', 'resnet_m_base_oc', 'resnest_moc', 'segformer_b0'], help='Tell me what to use')
     parser.add_argument('--height', type=int, default=1080, help='Height of images to resize, nothing to add')
     parser.add_argument('--load-dir', required=True, help='Where to load your model from')
     parser.add_argument('--save-dir', required=True, help='Where to save output')
     parser.add_argument('--vis_fps', action='store_true', help='Whether to visualize fps')
+    parser.add_argument('--colorize', action='store_true', help='Whether to colorize images or save them as single channeled')
     parser.add_argument('--disable-cuda', action='store_true', help='Disable CUDA')
     main(parser.parse_args())

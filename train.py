@@ -13,7 +13,7 @@ from torch.optim import Adam
 from models.resnet_oc.resnet_oc import get_resnet34_oc
 from models.resnet_moc.resnet_moc import get_resnet34_moc
 from models.resnet_oc_lw.resnet_oc_lw import get_resnet34_oc_lw
-from models.resnet_ocold.model import get_resnet34_base_oc_layer3
+from models.resnet_m_base_oc.model import get_resnet34_base_oc_layer3
 from models.resnet_ocr.resnet_ocr import get_resnet34_ocr
 from models.resnest_moc.resnest_moc import get_resnest50_moc
 from models.resnet_funmoc.resnet_moc import get_resnet34_funmoc
@@ -36,19 +36,10 @@ def get_model(model_name, pretrained=False):
         return get_resnest50_moc(pretrained)
     elif model_name == 'resnet_funmoc':
         return get_resnet34_funmoc(pretrained)
-    elif model_name == 'resnet_ocold':
+    elif model_name == 'resnet_m_base_oc':
         return get_resnet34_base_oc_layer3(66, pretrained)
     else:
         raise NotImplementedError('Unknown model')
-
-def get_last_state(path):
-    list_of_files = glob.glob(path + "/model-*.pth")
-    max=0
-    for file in list_of_files:
-        num = int(re.search(r'model-(\d*)', file).group(1))  
-
-        max = num if num > max else max 
-    return max
 
 def train(args):
     #Get training data
@@ -63,6 +54,8 @@ def train(args):
 
     savedir = args.save_dir
     savedir = f'./save/{savedir}'
+    if not os.path.exists(savedir):
+        os.makedirs(savedir)
 
     optimizer = Adam(model.parameters(), 3e-4, (0.9, 0.999),  eps=1e-08, weight_decay=1e-4)
     scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer,
@@ -72,11 +65,9 @@ def train(args):
     start_epoch = 1
     best_metric = 0
     if args.resume:
-        #Must load weights, optimizer, epoch and best value.
-        file_resume = savedir + '/model-{}.pth'.format(get_last_state(savedir))
-        
-        assert os.path.exists(file_resume), "Error: resume option was used but checkpoint was not found in folder"
-        checkpoint = torch.load(file_resume)
+        #Must load weights, optimizer, epoch and best value.        
+        assert os.path.exists(args.model_path), "Error: resume option was used but checkpoint was not found in folder"
+        checkpoint = torch.load(args.model_path)
         start_epoch = checkpoint['epoch'] + 1
         optimizer.load_state_dict(checkpoint['opt'])
         model.load_state_dict(checkpoint['model'])
@@ -108,7 +99,7 @@ def train(args):
 
             if step % 100 == 0:
                 average = sum(epoch_loss) / len(epoch_loss)
-                wandb.log({"epoch":epoch, "loss":average, 'lr':scheduler.get_last_lr()[0]}, step=(epoch-1)*18000 + step*args.batch_size)
+                wandb.log({"epoch":epoch, "loss":average, 'lr':scheduler.get_last_lr()[0]}, step=(epoch-1)*len(loader) + step)
         
         scheduler.step()
 
@@ -121,32 +112,23 @@ def train(args):
 
         if float(last_metric['iou']) > best_metric:
             best_metric = float(last_metric['iou'])
-            #if args.epochs_save > 0 and epoch > 0 and epoch % args.epochs_save == 0:
             filename = f'{savedir}/{args.model}.pth'
             torch.save({'model':model.state_dict(), 'opt':optimizer.state_dict(),'scheduler':scheduler.state_dict(), 'epoch':epoch}, filename)
             print(f'save: {filename} (epoch: {epoch})')
     
     return
 
-def main(args):
-    savedir = args.save_dir
-    savedir = f'./save/{savedir}'
-    if not os.path.exists(savedir):
-        os.makedirs(savedir)
-    
+def main(args):    
     config = dict(model = args.model,
                     height = args.height,
                     epochs = args.num_epochs,
                     bs = args.batch_size,
                     pretrained = args.pretrained,
                     savedir = args.save_dir)
+
     args.device = None
     if not args.disable_cuda and torch.cuda.is_available():
-<<<<<<< HEAD
-        args.device = torch.device('cuda:2')
-=======
-        args.device = torch.device('cuda:2')
->>>>>>> b5cd21de395caa5691dcbf2fb5d8d099efb8b0a9
+        args.device = torch.device('cuda')
     else:
         args.device = torch.device('cpu')
     
@@ -162,16 +144,16 @@ if __name__== '__main__':
     parser = ArgumentParser()
     
     parser.add_argument('--data-dir', required=True, help='Mapillary directory')
-    parser.add_argument('--model', required=True, choices=['resnest_moc', 'resnet_oc_lw', 'resnet_oc', 'resnet_funmoc', 'resnet_ocr', 'resnet_moc', 'resnet_ocold', 'resnest_dumb'], help='Tell me what to train')
+    parser.add_argument('--model', required=True, choices=['resnest_moc', 'resnet_oc_lw', 'resnet_oc', 'resnet_funmoc', 'resnet_ocr', 'resnet_moc', 'resnet_m_base_oc'], help='Tell me what to train')
     parser.add_argument('--loss', default='BCE', help='Loss name, either BCE or Focal')
     parser.add_argument('--height', type=int, default=600, help='Height of images, nothing to add')
     parser.add_argument('--num-epochs', type=int, default=10, help='If you use resume, give a number considering for how long it trained')
     parser.add_argument('--batch-size', type=int, default=1)
     parser.add_argument('--save-dir', help='Where to save your model')
     parser.add_argument('--pretrained', action='store_true', help='Whether to use pretrained backbone')
-    parser.add_argument('--resume', action='store_true', help='Resumes from the last save from --savedir directory')
+    parser.add_argument('--model-path', help='Where to load your model from')
+    parser.add_argument('--resume', action='store_true', help='Resumes from the last save from --save-path path')
     parser.add_argument('--wandb', action='store_true', help='Whether to log metrics to wandb')    
-    parser.add_argument('--project-name', default='Junk', help='Project name for weights and Biases')
+    parser.add_argument('--project-name', default='Resnet-M-BASE-OC', help='Project name for weights and Biases')
     parser.add_argument('--disable-cuda', action='store_true', help='Disable CUDA')
-    parser.add_argument('--epochs-save', type=int, default=3, help='You can use this value to save model every X epochs')
     main(parser.parse_args())

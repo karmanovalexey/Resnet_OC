@@ -15,7 +15,7 @@ from models.resnet_oc.resnet_oc import get_resnet34_oc
 from models.resnet_moc.resnet_moc import get_resnet34_moc
 from models.resnet_oc_lw.resnet_oc_lw import get_resnet34_oc_lw
 from models.resnet_ocr.resnet_ocr import get_resnet34_ocr
-from models.resnet_ocold.model import get_resnet34_base_oc_layer3
+from models.resnet_m_base_oc.model import get_resnet34_base_oc_layer3
 
 from utils.mapillary import mapillary
 from utils.transform import Relabel, ToLabel, Colorize
@@ -34,15 +34,13 @@ def get_model(model_name, pretrained=False):
         return get_resnet34_ocr(pretrained)
     elif model_name == 'resnet_moc':
         return get_resnet34_moc(pretrained)
-    elif model_name == 'resnet_ocold':
+    elif model_name == 'resnet_m_base_oc':
         return get_resnet34_base_oc_layer3(66, pretrained)
     else:
         raise NotImplementedError('Unknown model')
 
 def load_checkpoint(model_path):
-    #Must load weights, optimizer, epoch and best value.
     file_resume = f'{model_path}'
-    #file_resume = savedir + '/model-{}.pth'.format(get_last_state(savedir))
     assert os.path.exists(file_resume), "No model checkpoint found"
     checkpoint = torch.load(file_resume)
 
@@ -219,12 +217,12 @@ if __name__ == '__main__':
     wandb.login()
     parser = ArgumentParser()
     parser.add_argument('--data-dir', help='Mapillary directory')
-    parser.add_argument('--model', choices=['resnet_oc_lw', 'resnet_oc', 'resnet_moc', 'resnet_ocr', 'resnet_ocold'], help='Tell me what to train')
+    parser.add_argument('--model', choices=['resnet_oc_lw', 'resnet_oc', 'resnet_moc', 'resnet_ocr', 'resnet_m_base_oc'], help='Tell me what to train')
     parser.add_argument('--loss', default='BCE', help='Loss name, either BCE or Focal')
     parser.add_argument('--height', type=int, default=1080, help='Height of images, nothing to add')
     parser.add_argument('--batch-size', type=int, default=1)
     parser.add_argument('--model-path', required=True, help='Where to load your model from')
     parser.add_argument('--wandb', action='store_true', help='Whether to log metrics to wandb')    
     parser.add_argument('--disable-cuda', action='store_true', help='Disable CUDA')
-    parser.add_argument('--project-name', default='OC Results', help='Project name for weights and Biases')
+    parser.add_argument('--project-name', default='Results', help='Project name for weights and Biases')
     main(parser.parse_args())
