@@ -3,7 +3,7 @@ docker run \
             --rm \
             --ipc=host \
             --net=host \
-            -v /media/alexey/Data/Datasets/Mapillary:/workspace/Mapillary \
+            -v /media/alexey/HDD5/Mapillary:/workspace/Mapillary \
             -v /home/alexey/development/Resnet_OC:/workspace/Resnet_OC \
             -v /home/alexey/development/model_weights:/workspace/model_weights \
             resnet_oc

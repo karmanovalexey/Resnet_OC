@@ -1,0 +1,70 @@
+Mapillary_classnum,Mapillary,Мапилари,Kitti-360,Китти-360,Super_num,Supercategory,Update (Пишем здесь категории с меньшим приоритетом)
+65,,,vending machine,автомат с едой,0,background,
+65,,,box,коробка,0,background,
+0,bird,птица,-,-,0,background,
+1,ground animal,животное,-,-,0,background,
+16,bridge,мост,-,-,0,background,"wall, building, unlabeled"
+18,tunnel,туннель,-,-,0,background,"wall, building, unlabeled"
+33,bench,скамейка,-,-,1,static_obstacle,
+34,bike rack,велокрепление,-,-,1,static_obstacle,
+37,cctv camera,камера видеонаблюдения,-,-,0,background,
+38,fire hydrant,пожарный гидрант,-,-,1,static_obstacle,
+39,junction box,электромонтажная коробка,-,-,0,background,
+40,mailbox,почтовый ящик,-,-,0,background,
+42,phone booth,телефонная будка,-,-,1,static_obstacle,
+53,boat,лодка,-,-,1,static_obstacle,
+65,unlabeled,неразмечено,unlabeled,неразмечено,0,background,
+4,guard rail,защитное ограждение,-,-,1,static_obstacle_other,"fence, wall, building, road, crosswalk,terrain,unlabeled"
+5,other barrier,остальные барьеры,-,-,1,static_obstacle_other,"fence, wall, building, road, crosswalk,terrain,unlabeled"
+3,fence,забор,fence,забор,1,static_obstacle,
+6,wall,стена,wall,стена,1,static_obstacle,
+17,building,здание,building,здание,1,static_obstacle,
+7,bike lane,велодорожка,-,-,2,walk_zone,"road, sidewalk,terrain,unlabeled"
+11,pedestrian area,пешеходная зона,-,-,2,walk_zone,"road, sidewalk,terrain,unlabeled"
+15,sidewalk,тротуар,sidewalk,тротуар,2,walk_zone, 
+9,curb cut,заезд на бордюр,-,-,3,curb,"road, sidewalk,terrain,unlabeled"
+2,curb,бордюр,-,-,3,curb,"road, sidewalk,terrain,unlabeled"
+12,rail track,ж/д пути,-,-,4,road,"road, sidewalk,terrain,unlabeled"
+14,service lane,вспомогательная полоса,-,-,4,road,"road, sidewalk,terrain,unlabeled"
+36,catch basin,ливнёвая канализация,-,-,4,road,"road, sidewalk,terrain,unlabeled"
+10,parking,парковочное место,-,-,4,road,"road, sidewalk,terrain,unlabeled"
+13,road,дорога,road,дорога,4,road,
+41,manhole,канализационный люк,-,-,4,road,"road, sidewalk,terrain,unlabeled"
+26,sand,песок,-,-,5,sand_and_snow,"road, sidewalk,terrain,unlabeled"
+28,snow,снег,-,-,5,sand_and_snow,
+31,water,вода,-,-,6,water,
+32,banner,баннер,-,-,7,banner,
+35,billboard,билборд,-,-,7,banner,
+56,caravan,дом на колёсах,-,-,8,car,
+59,other vehicle,другой транспорт,-,-,8,car,
+62,wheeled slow,малоподвижный транспорт,-,-,8,car,
+63,car mount,прицеп?,-,-,8,car,
+54,bus,автобус,bus,автобус,8,car,
+55,car,машина,car,машина,8,car,
+58,on rails,поезд,train,поезд,8,car,
+60,trailer,трейлер,trailer,трейлер,8,car,
+61,truck,грузовик,truck,грузовик,8,car,
+24,marking general,дорожная разметка,-,-,9,road_marking_general,"road, sidewalk"
+19,person,человек,person,человек,10,person,
+20,bicyclist,велосипедист,-,-,10,person,All
+21,motorcyclist,мотоциклист,-,-,10,person,All
+22,other rider,водитель,rider,водитель,10,person,
+27,sky,небо,sky,небо,11,background,
+25,mountain,гора,-,-,11,background,"unlabeled, sky"
+29,terrain,земля,terrain,земля,12,terrain,
+30,vegetation,растительность,vegetation,растительность,13,vegetation,
+44,street light,фонарь,lamp,фонарь,14,pole,
+45,pole,столб,pole,столб,14,pole,
+47,utility pole,столб,,,14,pole,
+46,traffic sign frame,"столб, держащий знак",,,14,pole,
+49,traffic sign back,дорожный знак (сзади),,,15,traffic_sign,
+50,traffic sign front,дорожный знак,traffic sign,дорожный знак,15,traffic_sign,
+48,traffic light,светофор,traffic light,светофор,16,traffic_light,
+51,trash can,мусорный бак,trash bin,мусорный бак,17,trash_can,
+52,bicycle,велосипед,bicycle,велосипед,18,cycle,
+57,motorcycle,мотоцикл,motorcycle,мотоцикл,18,cycle,
+64,ego vehicle,эго-транспорт,ego vehicle,эго-транспорт,19,ego_vehicle,
+8,crosswalk plain,пешеходный переход,,,20,road_marking_crosswalk,
+23,crosswalk zebra,пешеходный переход,,,20,road_marking_crosswalk,
+43,pothole,яма,-,-,21,pothole,
+,Количество групп категорий,,,,,22,
