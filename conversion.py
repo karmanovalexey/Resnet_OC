@@ -56,7 +56,7 @@ def main(args):
 if __name__ == '__main__':
     parser = ArgumentParser()
 
-    parser.add_argument('--data-dir', required=True, help='Mapillary directory')
+    parser.add_argument('--data-dir', required=True, help='label images directory')
     parser.add_argument('--new-dir', required=True, help='Where to save new dataset')
     parser.add_argument('--config', required=True, help='CSV file consisting data for conversion')
 
