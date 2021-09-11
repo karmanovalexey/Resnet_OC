@@ -64,10 +64,11 @@ class MyCoTransform(object):
 
         return input, target
 
-class kitti(Dataset):
-    def __init__(self, root, subset='val', height=None, track_nums=[3]):
+class Kitti360(Dataset):
+    def __init__(self, root, subset='val', height=None, track_nums=[0]):
         assert ((1 not in track_nums) and (8 not in track_nums) and all(i <= 10 for i in track_nums)) #tracks can repeat
 
+        #tracks variables are lists of paths to track directories 
         self.track_nums = sorted(track_nums)
         self.image_tracks = [root + "/data_2d_raw/2013_05_28_drive_00%02d_sync/image_00/data_rect/" % i for i in self.track_nums]
         self.label_tracks = [root + "/data_2d_semantics/train/2013_05_28_drive_00%02d_sync/semantic/" % i for i in self.track_nums]
@@ -75,7 +76,6 @@ class kitti(Dataset):
 
         self.images = []
         self.labels = []
-
         # as not all images have labels, we firstly run thorugh files in labels directory 
         for img_tr, lab_tr in zip(self.image_tracks, self.label_tracks):
             files = next(os.walk(lab_tr))[2]
@@ -93,20 +93,18 @@ class kitti(Dataset):
         image_path = self.images[pos[0]][pos[1]]
         label_path = self.labels[pos[0]][pos[1]]
         # img = self.images[]
-        # with open(, 'rb') as f:
-        #     image = load_image(f).convert('RGB')
-        # with open(, 'rb') as f:
-        #     label = load_image(f).convert('P')
+        with open(image_path, 'rb') as f:
+            image = load_image(f).convert('RGB')
+        with open(label_path, 'rb') as f:
+            label = load_image(f).convert('P')
 
-        # image, label = self.co_transform(input=image, target=label)
+        image, label = self.co_transform(input=image, target=label)
 
-        return image_path, label_path
+        return image, label
 
     def __len__(self):
         return sum(len(i) for i in self.labels)
 
 
 if __name__=='__main__':
-    kit = kitti('/datasets/KITTI-360')
-    for item in kit:
-        print(item)
+    kit = kitti('/workspace/KITTI-360')

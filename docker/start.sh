@@ -3,7 +3,8 @@ docker run \
             --rm \
             --ipc=host \
             --net=host \
-            -v /media/alexey/HDD5/Mapillary:/workspace/Mapillary \
-            -v /home/alexey/development/Resnet_OC:/workspace/Resnet_OC \
-            -v /home/alexey/development/model_weights:/workspace/model_weights \
+            -v /datasets/KITTI-360/:/workspace/KITTI-360 \
+            -v /datasets/Mapillary/mapillary-vistas-dataset_public_v1.1:/workspace/Mapillary \
+            -v /home/karmanov_aa/Resnet_OC:/workspace/Resnet_OC \
+            -v /home/karmanov_aa/semantic-segmentation:/workspace/ss \
             resnet_oc
